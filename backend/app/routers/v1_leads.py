@@ -8,7 +8,8 @@ import hmac
 import os
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -66,3 +67,54 @@ def list_leads(
             detail="Lead data is unavailable. Verify DATABASE_URL and database/schema.sql.",
         )
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
+
+class LeadCreate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=200)
+    preferred_language: str = Field(default="unknown")
+    source: str = Field(default="manual", max_length=40)
+    marketing_consent: bool = False
+    whatsapp_consent: bool = False
+    email_consent: bool = False
+
+    @classmethod
+    def validate_language(cls, value):
+        if value not in {"en", "hi", "mr", "mixed", "unknown"}:
+            raise ValueError("Unsupported preferred language.")
+        return value
+
+
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+def create_lead(payload: LeadCreate):
+    """Create a lead with explicit consent defaults; no outbound messages are sent."""
+    name = payload.full_name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="full_name cannot be blank.")
+    if payload.preferred_language not in {"en", "hi", "mr", "mixed", "unknown"}:
+        raise HTTPException(status_code=422, detail="Unsupported preferred_language.")
+    allowed_sources = {"whatsapp", "instagram", "phone_call", "website_form", "email", "walk_in", "manual", "other"}
+    if payload.source not in allowed_sources:
+        raise HTTPException(status_code=422, detail="Unsupported source.")
+    statement = text("""
+        INSERT INTO public.leads
+          (full_name, preferred_language, first_touch_source, last_touch_source,
+           marketing_consent, whatsapp_consent, email_consent)
+        VALUES
+          (:full_name, :preferred_language, :source, :source,
+           :marketing_consent, :whatsapp_consent, :email_consent)
+        RETURNING id, full_name, preferred_language, stage, lead_score,
+                  first_touch_source, last_touch_source, created_at, updated_at
+    """)
+    try:
+        with engine.begin() as connection:
+            row = connection.execute(statement, {
+                "full_name": name,
+                "preferred_language": payload.preferred_language,
+                "source": payload.source,
+                "marketing_consent": payload.marketing_consent,
+                "whatsapp_consent": payload.whatsapp_consent,
+                "email_consent": payload.email_consent,
+            }).mappings().one()
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Lead could not be saved. Verify DATABASE_URL and database/schema.sql.")
+    return {"data": dict(row)}
+
