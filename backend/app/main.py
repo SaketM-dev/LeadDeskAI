@@ -7,6 +7,7 @@ from app.routers.voice import router as voice_router
 from app.routers.v1_leads import router as v1_leads_router
 from app.routers.v1_followups import router as v1_followups_router
 from app.routers.v1_demo_bookings import router as v1_demo_bookings_router
+from app.routers.v1_conversations import router as v1_conversations_router
 
 app = FastAPI(
     title="AI Lead Desk API",
@@ -19,6 +20,7 @@ app.include_router(voice_router)
 app.include_router(v1_leads_router)
 app.include_router(v1_followups_router)
 app.include_router(v1_demo_bookings_router)
+app.include_router(v1_conversations_router)
 
 
 v1_health_router = APIRouter(prefix="/api/v1", tags=["v1-health"])
