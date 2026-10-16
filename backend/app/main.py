@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -15,7 +15,7 @@ app = FastAPI(
 app.include_router(voice_router)
 
 
-v1_health_router = __import__("fastapi").APIRouter(prefix="/api/v1", tags=["v1-health"])
+v1_health_router = APIRouter(prefix="/api/v1", tags=["v1-health"])
 
 
 @v1_health_router.get("/health")
