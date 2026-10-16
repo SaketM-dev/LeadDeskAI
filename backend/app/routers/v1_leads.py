@@ -208,3 +208,60 @@ def update_lead(lead_id: str, payload: LeadUpdate):
     if row is None:
         raise HTTPException(status_code=404, detail="Lead not found.")
     return {"data": dict(row)}
+
+class LeadAssignment(BaseModel):
+    user_id: str = Field(min_length=36, max_length=36)
+
+
+@router.post("/{lead_id}/assign", dependencies=[Depends(require_api_token)])
+def assign_lead(lead_id: str, payload: LeadAssignment):
+    """Assign an active lead to an active staff user and record an audit event."""
+    import json
+    from uuid import UUID
+
+    try:
+        parsed_lead_id = str(UUID(lead_id))
+        parsed_user_id = str(UUID(payload.user_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="lead_id and user_id must be valid UUIDs.")
+
+    try:
+        with engine.begin() as connection:
+            lead = connection.execute(
+                text("SELECT id FROM public.leads WHERE id = :lead_id AND merged_into_lead_id IS NULL FOR UPDATE"),
+                {"lead_id": parsed_lead_id},
+            ).mappings().first()
+            if lead is None:
+                raise HTTPException(status_code=404, detail="Lead not found.")
+
+            user = connection.execute(
+                text("SELECT id FROM public.app_users WHERE id = :user_id AND is_active = true"),
+                {"user_id": parsed_user_id},
+            ).mappings().first()
+            if user is None:
+                raise HTTPException(status_code=404, detail="Active staff user not found.")
+
+            updated = connection.execute(text("""
+                UPDATE public.leads
+                SET assigned_user_id = :user_id, updated_at = now()
+                WHERE id = :lead_id AND merged_into_lead_id IS NULL
+                RETURNING id, full_name, preferred_language, stage, assigned_user_id, updated_at
+            """), {"lead_id": parsed_lead_id, "user_id": parsed_user_id}).mappings().first()
+            connection.execute(text("""
+                INSERT INTO public.audit_events
+                    (actor_id, event_type, entity_type, entity_id, details)
+                VALUES (NULL, 'lead.assigned', 'lead', :lead_id, CAST(:details AS jsonb))
+            """), {
+                "lead_id": parsed_lead_id,
+                "details": json.dumps({"assigned_to": parsed_user_id, "actor": "shared_token"}),
+            })
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Assignment could not be saved. Apply the admissions workflow migration and verify the database.",
+        )
+
+    return {"data": dict(updated)}
+
