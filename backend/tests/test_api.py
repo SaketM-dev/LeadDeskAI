@@ -153,3 +153,36 @@ def test_v1_leads_rejects_unsupported_stage(monkeypatch):
     monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
     response = client.get("/api/v1/leads?stage=unknown", headers={"Authorization": "Bearer test-secret"})
     assert response.status_code == 422
+
+
+def test_v1_leads_returns_503_when_database_query_fails(monkeypatch):
+    from sqlalchemy.exc import SQLAlchemyError
+    import app.routers.v1_leads as leads_module
+
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class BrokenConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            raise SQLAlchemyError("database unavailable")
+
+    class BrokenEngine:
+        def connect(self):
+            return BrokenConnection()
+
+    monkeypatch.setattr(leads_module, "engine", BrokenEngine())
+    response = client.get("/api/v1/leads", headers={"Authorization": "Bearer test-secret"})
+    assert response.status_code == 503
+    assert "Lead data is unavailable" in response.json()["detail"]
+
+
+def test_v1_leads_validates_page_size(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.get(
+        "/api/v1/leads?limit=101",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 422
