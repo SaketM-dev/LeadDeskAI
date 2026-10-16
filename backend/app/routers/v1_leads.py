@@ -1,8 +1,7 @@
-"""Authenticated, read-only v1 lead listing.
+"""Token-protected v1 lead endpoints.
 
-The route fails closed until LEAD_DESK_API_TOKEN is configured. Replace this
-shared-token bootstrap with per-user sessions and role/ownership checks before
-exposing broader workflows to multiple staff members.
+The shared token is a temporary bootstrap, not per-user authentication. Add
+sessions, role/ownership checks, and audit logging before broader production use.
 """
 import hmac
 import os
@@ -75,12 +74,6 @@ class LeadCreate(BaseModel):
     marketing_consent: bool = False
     whatsapp_consent: bool = False
     email_consent: bool = False
-
-    @classmethod
-    def validate_language(cls, value):
-        if value not in {"en", "hi", "mr", "mixed", "unknown"}:
-            raise ValueError("Unsupported preferred language.")
-        return value
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
