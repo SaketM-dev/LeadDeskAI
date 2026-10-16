@@ -1130,3 +1130,39 @@ def test_conversation_takeover_routes_validate_ids_and_auth(monkeypatch):
     url = "/api/v1/conversations/not-a-uuid/takeover"
     assert client.post(url, headers={"Authorization": "Bearer test-secret"}).status_code == 422
     assert client.post("/api/v1/conversations/55555555-5555-4555-8555-555555555555/takeover").status_code == 401
+
+def test_knowledge_article_creation_saves_draft_and_version(monkeypatch):
+    import app.routers.v1_knowledge_base as kb_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+    class FakeResult:
+        def mappings(self): return self
+        def one(self):
+            return {"id":"77777777-7777-4777-8777-777777777777","kind":"faq","title":"Fees","body":"Ask admissions","status":"draft","version":1}
+    class FakeConnection:
+        def __enter__(self): return self
+        def __exit__(self, exc_type, exc, traceback): return False
+        def execute(self, statement, params):
+            statements.append(str(statement))
+            if "INSERT INTO public.knowledge_articles" in str(statement): return FakeResult()
+            return FakeResult()
+    class FakeEngine:
+        def begin(self): return FakeConnection()
+    monkeypatch.setattr(kb_module, "engine", FakeEngine())
+    response = client.post("/api/v1/knowledge-base/documents",
+        headers={"Authorization":"Bearer test-secret"},
+        json={"kind":"faq","title":" Fees ","body":" Ask admissions "})
+    assert response.status_code == 201
+    assert response.json()["data"]["status"] == "draft"
+    assert "not approved for AI use" in response.json()["notice"]
+    assert any("knowledge_article_versions" in sql for sql in statements)
+    assert any("audit_events" in sql for sql in statements)
+
+
+def test_knowledge_base_requires_auth_and_validates_content(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    assert client.get("/api/v1/knowledge-base/documents").status_code == 401
+    response = client.post("/api/v1/knowledge-base/documents",
+        headers={"Authorization":"Bearer test-secret"},
+        json={"kind":"faq","title":"  ","body":"body"})
+    assert response.status_code == 422
