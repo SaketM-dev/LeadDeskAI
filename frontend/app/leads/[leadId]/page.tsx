@@ -28,7 +28,7 @@ export default function LeadDetailPage() {
   const params = useParams<{ leadId: string }>();
   const leadId = decodeURIComponent(params.leadId);
   const original = useMemo(() => getDemoLeadDetail(leadId), [leadId]);
-  const [lead, setLead] = useState<LeadDetail | null>(DEMO_MODE ? original : null);
+  const [lead, setLead] = useState<LeadDetail | null>(DEMO_MODE ? (original ?? null) : null);
   const [loading, setLoading] = useState(!DEMO_MODE);
   const [note, setNote] = useState('');
   const [followUpOpen, setFollowUpOpen] = useState(false);
@@ -39,7 +39,7 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     if (DEMO_MODE) {
-      setLead(original);
+      setLead(original ?? null);
       setEvents(original?.timeline ?? []);
       setLoading(false);
       return;
