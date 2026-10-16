@@ -119,6 +119,15 @@ CREATE TABLE IF NOT EXISTS public.knowledge_article_versions (
   UNIQUE(article_id, version)
 );
 
+CREATE TABLE IF NOT EXISTS public.lead_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id uuid NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.app_users(id) ON DELETE SET NULL,
+  body text NOT NULL CHECK (length(trim(body)) BETWEEN 1 AND 5000),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS lead_notes_timeline_idx ON public.lead_notes(lead_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS public.audit_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_id uuid REFERENCES public.app_users(id) ON DELETE SET NULL,
