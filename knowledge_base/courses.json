@@ -1,0 +1,141 @@
+{
+  "dataset_name": "AI Lead Desk sample course knowledge base",
+  "dataset_version": 1,
+  "demo_data_only": true,
+  "warning": "All course names, fees, durations and weekly schedules are fictional hackathon placeholders. Do not use for real prospects until replaced by institute data and approved.",
+  "currency": "INR",
+  "timezone": "Asia/Kolkata",
+  "courses": [
+    {
+      "code": "WEB-101",
+      "title": "Full-Stack Web Development",
+      "description": "Demo course for learners interested in frontend and backend web apps.",
+      "fee_amount": 45000,
+      "fee_currency": "INR",
+      "fee_basis": "total_tuition_demo_value",
+      "fee_verified": false,
+      "duration_weeks": 16,
+      "schedule": {
+        "days": [
+          "Monday",
+          "Wednesday",
+          "Friday"
+        ],
+        "start": "19:00",
+        "end": "21:00",
+        "timezone": "Asia/Kolkata",
+        "is_demo_pattern": true
+      },
+      "eligibility_text": null,
+      "taxes_and_materials": "unspecified",
+      "discount_policy": null,
+      "placement_claim": null,
+      "official_start_date": null,
+      "status": "draft_demo_only",
+      "recommendation_fit": [
+        "wants_to_build_web_apps",
+        "can_practice_regularly"
+      ]
+    },
+    {
+      "code": "DATA-101",
+      "title": "Data Analytics with Python",
+      "description": "Demo course for learners interested in data analysis, Python and visualization.",
+      "fee_amount": 32000,
+      "fee_currency": "INR",
+      "fee_basis": "total_tuition_demo_value",
+      "fee_verified": false,
+      "duration_weeks": 12,
+      "schedule": {
+        "days": [
+          "Tuesday",
+          "Thursday",
+          "Saturday"
+        ],
+        "start": "18:30",
+        "end": "20:30",
+        "timezone": "Asia/Kolkata",
+        "is_demo_pattern": true
+      },
+      "eligibility_text": null,
+      "taxes_and_materials": "unspecified",
+      "discount_policy": null,
+      "placement_claim": null,
+      "official_start_date": null,
+      "status": "draft_demo_only",
+      "recommendation_fit": [
+        "wants_to_analyze_data",
+        "interested_in_python"
+      ]
+    },
+    {
+      "code": "AIML-101",
+      "title": "AI & Machine Learning Foundations",
+      "description": "Demo course for learners interested in introductory AI and predictive models.",
+      "fee_amount": 55000,
+      "fee_currency": "INR",
+      "fee_basis": "total_tuition_demo_value",
+      "fee_verified": false,
+      "duration_weeks": 20,
+      "schedule": {
+        "days": [
+          "Monday",
+          "Wednesday",
+          "Friday"
+        ],
+        "start": "19:00",
+        "end": "21:00",
+        "timezone": "Asia/Kolkata",
+        "is_demo_pattern": true
+      },
+      "eligibility_text": null,
+      "taxes_and_materials": "unspecified",
+      "discount_policy": null,
+      "placement_claim": null,
+      "official_start_date": null,
+      "status": "draft_demo_only",
+      "recommendation_fit": [
+        "interested_in_predictive_models",
+        "willing_to_practice_python_and_math"
+      ]
+    },
+    {
+      "code": "CLOUD-101",
+      "title": "Cloud & DevOps Fundamentals",
+      "description": "Demo course for learners interested in cloud, deployment and automation.",
+      "fee_amount": 40000,
+      "fee_currency": "INR",
+      "fee_basis": "total_tuition_demo_value",
+      "fee_verified": false,
+      "duration_weeks": 14,
+      "schedule": {
+        "days": [
+          "Tuesday",
+          "Thursday",
+          "Saturday"
+        ],
+        "start": "19:00",
+        "end": "21:00",
+        "timezone": "Asia/Kolkata",
+        "is_demo_pattern": true
+      },
+      "eligibility_text": null,
+      "taxes_and_materials": "unspecified",
+      "discount_policy": null,
+      "placement_claim": null,
+      "official_start_date": null,
+      "status": "draft_demo_only",
+      "recommendation_fit": [
+        "interested_in_deployment",
+        "interested_in_cloud_or_automation"
+      ]
+    }
+  ],
+  "global_counselor_rules": [
+    "Use approved current knowledge base facts only for fees, schedules, discounts, eligibility, refund and placement.",
+    "Escalate unsupported questions to a human; never guess.",
+    "Match English, Hindi, Marathi and natural code-switching.",
+    "Demo schedules are patterns, not confirmed calendar slots.",
+    "Never promise jobs, salary, admission or outcomes."
+  ]
+}
