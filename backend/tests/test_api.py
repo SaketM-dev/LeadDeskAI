@@ -1057,3 +1057,76 @@ def test_conversation_routes_validate_ids_limits_and_blank_messages(monkeypatch)
     )
     # Validation is performed after stripping so whitespace-only messages are rejected.
     assert response.status_code in {404, 422}
+
+
+
+def test_conversation_takeover_and_release_are_audited(monkeypatch):
+    import app.routers.v1_conversations as conversations_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+    takeover_active = {"value": False}
+
+    class FakeResult:
+        def __init__(self, row=None):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            if "SELECT id, lead_id, status, human_takeover" in sql:
+                return FakeResult({
+                    "id": "55555555-5555-4555-8555-555555555555",
+                    "lead_id": "11111111-1111-4111-8111-111111111111",
+                    "status": "open",
+                    "human_takeover": takeover_active["value"],
+                })
+            if "UPDATE public.conversations" in sql:
+                takeover_active["value"] = params.get("human_takeover", "human_takeover = true" in sql)
+                return FakeResult({
+                    "id": "55555555-5555-4555-8555-555555555555",
+                    "lead_id": "11111111-1111-4111-8111-111111111111",
+                    "channel": "website", "provider_mode": "simulated",
+                    "status": "open", "human_takeover": takeover_active["value"],
+                })
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(conversations_module, "engine", FakeEngine())
+    headers = {"Authorization": "Bearer test-secret"}
+    takeover = client.post(
+        "/api/v1/conversations/55555555-5555-4555-8555-555555555555/takeover",
+        headers=headers,
+    )
+    assert takeover.status_code == 200
+    assert takeover.json()["data"]["human_takeover"] is True
+    assert "does not authenticate a specific counselor" in takeover.json()["notice"]
+    release = client.post(
+        "/api/v1/conversations/55555555-5555-4555-8555-555555555555/release-to-ai",
+        headers=headers,
+    )
+    assert release.status_code == 200
+    assert release.json()["data"]["human_takeover"] is False
+    assert "no messages were sent" in release.json()["notice"]
+    assert any("conversation.human_takeover_started" in sql for sql in statements)
+    assert any("conversation.human_takeover_released" in sql for sql in statements)
+
+
+def test_conversation_takeover_routes_validate_ids_and_auth(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    url = "/api/v1/conversations/not-a-uuid/takeover"
+    assert client.post(url, headers={"Authorization": "Bearer test-secret"}).status_code == 422
+    assert client.post("/api/v1/conversations/55555555-5555-4555-8555-555555555555/takeover").status_code == 401
