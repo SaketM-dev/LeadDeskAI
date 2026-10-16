@@ -599,3 +599,88 @@ def test_v1_lead_notes_create_internal_note_and_audit(monkeypatch):
     assert response.json()["data"]["body"] == "Call back tomorrow"
     assert any("INSERT INTO public.audit_events" in sql for sql in statements)
 
+def test_v1_lead_timeline_validates_limit_and_uuid(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    headers = {"Authorization": "Bearer test-secret"}
+    assert client.get("/api/v1/leads/not-a-uuid/timeline", headers=headers).status_code == 422
+    assert client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/timeline?limit=101",
+        headers=headers,
+    ).status_code == 422
+
+
+def test_v1_lead_timeline_returns_newest_first_events(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def __init__(self, rows):
+            self.rows = rows
+        def mappings(self):
+            return self
+        def first(self):
+            return self.rows[0] if self.rows else None
+        def all(self):
+            return self.rows
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult([{"id": params["lead_id"]}])
+            assert params["limit"] == 20
+            assert "conversation_messages" in sql
+            assert "lead_notes" in sql
+            return FakeResult([
+                {"event_id": "note-1", "event_type": "note", "summary": "Call back"},
+                {"event_id": "message-1", "event_type": "message", "summary": "prospect: Hello"},
+            ])
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/timeline?limit=20",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()["data"]) == 2
+    assert response.json()["data"][0]["event_type"] == "note"
+    assert response.json()["page"]["next_cursor"] is None
+
+
+def test_v1_lead_timeline_returns_404_for_missing_lead(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return None
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            return FakeResult()
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/timeline",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 404
+
