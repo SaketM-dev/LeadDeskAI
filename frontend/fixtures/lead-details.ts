@@ -65,5 +65,8 @@ export const demoLeadDetails: Record<string, LeadDetail> = {
 };
 
 export function getDemoLeadDetail(leadId: string): LeadDetail | undefined {
-  return demoLeadDetails[leadId];
+  // The leads table uses LD-#### IDs; detail fixtures use demo-#### keys.
+  const normalizedId = leadId.startsWith('LD-') ? leadId.replace(/^LD-/, 'demo-') : leadId;
+  const detail = demoLeadDetails[leadId] ?? demoLeadDetails[normalizedId];
+  return detail ? { ...detail, id: leadId } : undefined;
 }
