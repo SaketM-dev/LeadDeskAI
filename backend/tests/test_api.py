@@ -807,3 +807,128 @@ def test_v1_follow_up_completion_is_audited(monkeypatch):
     assert response.json()["data"]["status"] == "completed"
     assert any("follow_up.completed" in sql for sql in statements)
 
+
+
+def test_demo_booking_creation_requires_auth_and_timezone(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    body = {
+        "lead_id": "11111111-1111-4111-8111-111111111111",
+        "starts_at": "2026-10-20T10:00:00+05:30",
+        "ends_at": "2026-10-20T11:00:00+05:30",
+    }
+    assert client.post("/api/v1/demo-bookings", json=body).status_code == 401
+    headers = {"Authorization": "Bearer test-secret"}
+    body["starts_at"] = "2026-10-20T10:00:00"
+    assert client.post("/api/v1/demo-bookings", headers=headers, json=body).status_code == 422
+
+
+def test_demo_booking_creation_is_pending_and_simulated(monkeypatch):
+    import app.routers.v1_demo_bookings as bookings_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def __init__(self, row=None):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult({"id": params["lead_id"]})
+            if "INSERT INTO public.demo_bookings" in sql:
+                assert "'pending', 'simulated'" in sql
+                return FakeResult({
+                    "id": "44444444-4444-4444-8444-444444444444",
+                    "lead_id": params["lead_id"],
+                    "status": "pending",
+                    "provider_mode": "simulated",
+                })
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(bookings_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/demo-bookings",
+        headers={"Authorization": "Bearer test-secret"},
+        json={
+            "lead_id": "11111111-1111-4111-8111-111111111111",
+            "starts_at": "2026-10-20T10:00:00+05:30",
+            "ends_at": "2026-10-20T11:00:00+05:30",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["status"] == "pending"
+    assert response.json()["data"]["provider_mode"] == "simulated"
+    assert "no calendar event was created" in response.json()["notice"]
+    assert any("INSERT INTO public.audit_events" in sql for sql in statements)
+
+
+def test_demo_booking_rejects_invalid_time_range_and_list_limit(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    headers = {"Authorization": "Bearer test-secret"}
+    response = client.post(
+        "/api/v1/demo-bookings",
+        headers=headers,
+        json={
+            "lead_id": "11111111-1111-4111-8111-111111111111",
+            "starts_at": "2026-10-20T11:00:00+05:30",
+            "ends_at": "2026-10-20T10:00:00+05:30",
+        },
+    )
+    assert response.status_code == 422
+    assert client.get("/api/v1/demo-bookings?limit=101", headers=headers).status_code == 422
+
+
+def test_demo_booking_cancellation_is_audited(monkeypatch):
+    import app.routers.v1_demo_bookings as bookings_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return {
+                "id": "44444444-4444-4444-8444-444444444444",
+                "lead_id": "11111111-1111-4111-8111-111111111111",
+                "status": "cancelled",
+                "provider_mode": "simulated",
+            }
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(bookings_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/demo-bookings/44444444-4444-4444-8444-444444444444/cancel",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "cancelled"
+    assert any("demo_booking.cancelled" in sql for sql in statements)
