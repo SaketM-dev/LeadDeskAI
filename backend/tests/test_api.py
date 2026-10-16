@@ -684,3 +684,126 @@ def test_v1_lead_timeline_returns_404_for_missing_lead(monkeypatch):
     )
     assert response.status_code == 404
 
+def test_v1_follow_up_creation_requires_auth_and_timezone(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    url = "/api/v1/follow-ups"
+    body = {
+        "lead_id": "11111111-1111-4111-8111-111111111111",
+        "title": "Call prospect",
+        "due_at": "2026-10-20T10:00:00+05:30",
+    }
+    assert client.post(url, json=body).status_code == 401
+    headers = {"Authorization": "Bearer test-secret"}
+    no_timezone = {**body, "due_at": "2026-10-20T10:00:00"}
+    assert client.post(url, headers=headers, json=no_timezone).status_code == 422
+
+
+def test_v1_follow_up_creation_writes_task_and_audit(monkeypatch):
+    import app.routers.v1_followups as followups_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def __init__(self, row=None, rows=None):
+            self.row, self.rows = row, rows or []
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+        def all(self):
+            return self.rows
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult(row={"id": params["lead_id"]})
+            if "INSERT INTO public.follow_up_tasks" in sql:
+                assert params["title"] == "Call prospect"
+                assert params["priority"] == "high"
+                return FakeResult(row={
+                    "id": "33333333-3333-4333-8333-333333333333",
+                    "lead_id": params["lead_id"],
+                    "title": params["title"],
+                    "priority": params["priority"],
+                    "status": "pending",
+                })
+            if "INSERT INTO public.audit_events" in sql:
+                assert "follow_up.created" in sql
+                return FakeResult()
+            raise AssertionError(f"Unexpected SQL: {sql}")
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(followups_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/follow-ups",
+        headers={"Authorization": "Bearer test-secret"},
+        json={
+            "lead_id": "11111111-1111-4111-8111-111111111111",
+            "title": " Call prospect ",
+            "priority": "high",
+            "due_at": "2026-10-20T10:00:00+05:30",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["title"] == "Call prospect"
+    assert any("INSERT INTO public.audit_events" in sql for sql in statements)
+
+
+def test_v1_follow_up_list_validates_limit(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.get(
+        "/api/v1/follow-ups?limit=101",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 422
+
+
+def test_v1_follow_up_completion_is_audited(monkeypatch):
+    import app.routers.v1_followups as followups_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return {
+                "id": "33333333-3333-4333-8333-333333333333",
+                "lead_id": "11111111-1111-4111-8111-111111111111",
+                "status": "completed",
+            }
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(followups_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/follow-ups/33333333-3333-4333-8333-333333333333/complete",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "completed"
+    assert any("follow_up.completed" in sql for sql in statements)
+
