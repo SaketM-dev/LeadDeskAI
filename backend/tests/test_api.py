@@ -23,3 +23,31 @@ def test_voice_status_is_explicit_when_unconfigured(monkeypatch):
     response = client.get("/api/voice/status")
     assert response.status_code == 200
     assert response.json()["status"] == "not_configured"
+
+
+def test_database_health_returns_503_when_database_is_unavailable(monkeypatch):
+    from sqlalchemy.exc import SQLAlchemyError
+    import app.main as main_module
+
+    class UnavailableEngine:
+        def connect(self):
+            raise SQLAlchemyError("database unavailable")
+
+    monkeypatch.setattr(main_module, "engine", UnavailableEngine())
+    response = client.get("/health/database")
+    assert response.status_code == 503
+    assert "DATABASE_URL" in response.json()["detail"]
+
+
+def test_lead_list_returns_503_when_database_is_unavailable(monkeypatch):
+    from sqlalchemy.exc import SQLAlchemyError
+    import app.main as main_module
+
+    class UnavailableEngine:
+        def connect(self):
+            raise SQLAlchemyError("database unavailable")
+
+    monkeypatch.setattr(main_module, "engine", UnavailableEngine())
+    response = client.get("/api/leads")
+    assert response.status_code == 503
+    assert "database/schema.sql" in response.json()["detail"]
