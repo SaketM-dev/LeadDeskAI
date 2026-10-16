@@ -104,3 +104,52 @@ def test_versioned_health_response_is_stable():
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/json")
     assert response.json()["status"] == "healthy"
+
+
+def test_v1_leads_fails_closed_when_auth_is_not_configured(monkeypatch):
+    monkeypatch.delenv("LEAD_DESK_API_TOKEN", raising=False)
+    response = client.get("/api/v1/leads")
+    assert response.status_code == 503
+
+
+def test_v1_leads_rejects_missing_or_invalid_bearer_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    assert client.get("/api/v1/leads").status_code == 401
+    assert client.get("/api/v1/leads", headers={"Authorization": "Bearer wrong"}).status_code == 401
+
+
+def test_v1_leads_returns_list_with_valid_token(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def all(self):
+            return [{"id": "lead-1", "full_name": "Asha Patil", "stage": "new"}]
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            assert params["limit"] == 10
+            assert params["stage"] == "new"
+            return FakeResult()
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.get("/api/v1/leads?limit=10&stage=new", headers={"Authorization": "Bearer test-secret"})
+    assert response.status_code == 200
+    assert response.json()["data"][0]["full_name"] == "Asha Patil"
+    assert response.json()["page"]["next_cursor"] is None
+
+
+def test_v1_leads_rejects_unsupported_stage(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.get("/api/v1/leads?stage=unknown", headers={"Authorization": "Bearer test-secret"})
+    assert response.status_code == 422
