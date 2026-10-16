@@ -1,17 +1,53 @@
 import type { Config } from 'tailwindcss';
 
+const token = (name: string) => `var(--${name})`;
+
 const config: Config = {
   content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
       colors: {
-        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
-        surface: { subtle: '#f8fafc' },
-        demo: { bg: '#f3e8ff', border: '#d8b4fe', text: '#6b21a8', dot: '#9333ea' }
+        brand: {
+          50: token('color-accent-soft'),
+          100: token('color-border'),
+          500: token('color-accent'),
+          600: token('color-accent-strong'),
+          700: token('color-accent'),
+        },
+        surface: {
+          DEFAULT: token('color-surface'),
+          subtle: token('color-page'),
+          raised: token('color-raised'),
+        },
+        ink: {
+          DEFAULT: token('color-text'),
+          muted: token('color-muted'),
+          subtle: token('color-subtle'),
+        },
+        status: {
+          success: token('color-success'),
+          warning: token('color-warning'),
+          danger: token('color-danger'),
+          info: token('color-info'),
+        },
+        demo: {
+          bg: token('color-purple-soft'),
+          border: token('color-border'),
+          text: token('color-purple'),
+          dot: token('color-purple'),
+        },
       },
-      boxShadow: { soft: '0 1px 3px rgba(15, 23, 42, 0.06)' }
-    }
+      borderRadius: {
+        card: 'var(--radius-card)',
+        control: 'var(--radius-control)',
+      },
+      boxShadow: {
+        soft: 'var(--shadow-card)',
+        raised: 'var(--shadow-raised)',
+      },
+      transitionDuration: { 160: '160ms', 180: '180ms' },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 export default config;
