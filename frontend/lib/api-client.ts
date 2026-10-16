@@ -7,7 +7,12 @@ export class ApiRequestError extends Error {
   }
 }
 
-type ApiErrorPayload = { error?: { code?: string; message?: string; request_id?: string } };
+type ApiErrorPayload = {
+  error?: { code?: string; message?: string; request_id?: string };
+  // FastAPI's default HTTPException response uses { detail: ... }.
+  detail?: string | { code?: string; message?: string };
+  message?: string;
+};
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (DEMO_MODE) throw new ApiRequestError('Live API requests are disabled in demo mode.', 0, 'DEMO_MODE');
@@ -18,7 +23,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
     });
   } catch {
-    throw new ApiRequestError('The API could not be reached. Check the backend URL and network.', 0, 'NETWORK_ERROR');
+    throw new ApiRequestError('The API could not be reached. Check BACKEND_API_URL and ensure FastAPI is running.', 0, 'NETWORK_ERROR');
   }
   if (!response.ok) {
     let message = `API request failed (${response.status})`;
@@ -26,8 +31,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     let requestId: string | undefined;
     try {
       const payload = await response.json() as ApiErrorPayload;
-      message = payload.error?.message || message;
-      code = payload.error?.code;
+      const detailMessage = typeof payload.detail === 'string'
+        ? payload.detail
+        : payload.detail?.message;
+      message = payload.error?.message || detailMessage || payload.message || message;
+      code = payload.error?.code || (typeof payload.detail === 'object' ? payload.detail.code : undefined);
       requestId = payload.error?.request_id;
     } catch { /* Preserve the HTTP status message for non-JSON responses. */ }
     throw new ApiRequestError(message, response.status, code, requestId);
