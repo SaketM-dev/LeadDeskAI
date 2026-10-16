@@ -68,8 +68,14 @@ def list_leads():
         LIMIT 100
     """)
 
-    with engine.connect() as connection:
-        rows = connection.execute(query).mappings().all()
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(query).mappings().all()
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Lead data is unavailable. Check DATABASE_URL and confirm database/schema.sql has been applied.",
+        )
 
     leads = [dict(row) for row in rows]
 
