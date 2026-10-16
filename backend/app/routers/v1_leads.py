@@ -149,3 +149,69 @@ def get_lead(lead_id: str):
     if row is None:
         raise HTTPException(status_code=404, detail="Lead not found.")
     return {"data": dict(row)}
+
+
+class LeadUpdate(BaseModel):
+    full_name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    preferred_language: Optional[str] = None
+    stage: Optional[str] = None
+    marketing_consent: Optional[bool] = None
+    whatsapp_consent: Optional[bool] = None
+    email_consent: Optional[bool] = None
+    do_not_contact: Optional[bool] = None
+
+
+@router.patch("/{lead_id}", dependencies=[Depends(require_api_token)])
+def update_lead(lead_id: str, payload: LeadUpdate):
+    """Update explicitly supplied lead fields; no messages are sent by this operation."""
+    from uuid import UUID
+
+    try:
+        parsed_id = str(UUID(lead_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="lead_id must be a valid UUID.")
+
+    changes = payload.dict(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=422, detail="Provide at least one field to update.")
+
+    allowed_stages = {
+        "new", "contacted", "qualified", "demo_booked", "demo_attended",
+        "nurturing", "admitted", "lost", "do_not_contact",
+    }
+    allowed_languages = {"en", "hi", "mr", "mixed", "unknown"}
+    if "full_name" in changes:
+        changes["full_name"] = changes["full_name"].strip()
+        if not changes["full_name"]:
+            raise HTTPException(status_code=422, detail="full_name cannot be blank.")
+    if "stage" in changes and changes["stage"] not in allowed_stages:
+        raise HTTPException(status_code=422, detail="Unsupported lead stage.")
+    if "preferred_language" in changes and changes["preferred_language"] not in allowed_languages:
+        raise HTTPException(status_code=422, detail="Unsupported preferred_language.")
+
+    # Column names come only from the fixed allowlist below, never from user input.
+    column_allowlist = {
+        "full_name", "preferred_language", "stage", "marketing_consent",
+        "whatsapp_consent", "email_consent", "do_not_contact",
+    }
+    if not set(changes).issubset(column_allowlist):
+        raise HTTPException(status_code=422, detail="Unsupported update field.")
+    assignments = ", ".join(f"{column} = :{column}" for column in changes)
+    changes["lead_id"] = parsed_id
+    statement = text(f"""
+        UPDATE public.leads
+        SET {assignments}, updated_at = now()
+        WHERE id = :lead_id AND merged_into_lead_id IS NULL
+        RETURNING id, full_name, preferred_language, stage, lead_score,
+                  first_touch_source, last_touch_source, marketing_consent,
+                  whatsapp_consent, email_consent, do_not_contact,
+                  assigned_user_id, created_at, updated_at
+    """)
+    try:
+        with engine.begin() as connection:
+            row = connection.execute(statement, changes).mappings().first()
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Lead could not be updated. Verify DATABASE_URL and database/schema.sql.")
+    if row is None:
+        raise HTTPException(status_code=404, detail="Lead not found.")
+    return {"data": dict(row)}
