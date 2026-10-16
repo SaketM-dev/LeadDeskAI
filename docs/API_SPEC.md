@@ -115,3 +115,9 @@ Return numerator, denominator, cohort/date boundaries and timezone; do not repor
 - Human takeover pauses AI replies until explicit release.
 - Lead merge is transactional and preserves all identity and timeline history.
 - Course-specific AI claims include source document/version IDs.
+
+
+### Implemented subset (current branch)
+- `GET /api/v1/health` — liveness probe.
+- `GET /ready` — database readiness probe.
+- `GET /api/v1/leads?q=&stage=&limit=` — read-only listing protected by `Authorization: Bearer <LEAD_DESK_API_TOKEN>`. Fails closed with 503 when the token is not configured; supports bounded page size (1–100), optional name search and stage filter. Response includes `data` and `page.next_cursor` (currently null; cursor pagination is not implemented). This shared-token bootstrap is not a replacement for per-user sessions, role/ownership checks, or row-level security. No lead write routes are implemented yet.
