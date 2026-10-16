@@ -8,24 +8,26 @@ AI-assisted admissions lead management for education teams. The application is d
 
 - `SPEC.md` — product scope, workflow, architecture, and acceptance criteria.
 - `docs/API_SPEC.md` — API endpoints and payload contracts.
-- `database/schema.sql` — PostgreSQL schema.
-- `knowledge_base/KNOWLEDGE_BASE.md` — counselor rules and sample knowledge.
-- `knowledge_base/courses.json` — sample course records.
-- `docs/DECISIONS.md` — shared architecture and data decisions.
-- `docs/TEAM_WORKFLOW.md` — branch and integration workflow.
-- `docs/FRONTEND.md` — frontend setup and architecture.
+- `database/schema.sql` — existing PostgreSQL schema.
+- `database/migrations/20261017_admissions_workflows.sql` — additive tables proposed for sessions, conversations, assessments, tasks, bookings, knowledge versions and audit events. **Not yet applied to a live database.**
+- `knowledge_base/KNOWLEDGE_BASE.md` and `knowledge_base/courses.json` — counselor rules and sample knowledge.
+- `docs/DECISIONS.md`, `docs/TEAM_WORKFLOW.md`, and `docs/FRONTEND.md` — shared architecture, collaboration and frontend guidance.
 
 ## Architecture
 
 - Frontend: Next.js App Router and TypeScript (`frontend/`).
-- Business API: Python FastAPI under `/api/v1`.
+- Business API: Python FastAPI; target contract under `/api/v1`.
 - Database: PostgreSQL.
 - Jobs and reminders: worker-backed jobs where implemented.
 - External channels, AI and calendar providers: adapter-based; disconnected providers must be labelled as simulated.
 
+## Frontend dark theme
+
+The workspace now has a dark token foundation in `frontend/app/globals.css`, semantic Tailwind tokens in `frontend/tailwind.config.ts`, a dark responsive app shell, a dark sign-in screen, and reusable UI primitives in `frontend/components/ui.tsx`. Existing feature screens are being migrated incrementally; the compatibility CSS remaps many legacy light palette utilities to the dark tokens.
+
 ## Run the backend
 
-The current FastAPI backend implements health checks, a database connectivity check, the lead-list read endpoint, and a voice-provider status endpoint. The rest of the product API in `docs/API_SPEC.md` is a specification, not a claim that every route exists.
+The current FastAPI backend implements health checks, a database connectivity check, the lead-list read endpoint, and a voice-provider status endpoint. The rest of the product API in `docs/API_SPEC.md` remains a target contract unless explicitly implemented and tested.
 
 1. Create a local virtual environment and install dependencies:
 
@@ -36,7 +38,7 @@ The current FastAPI backend implements health checks, a database connectivity ch
    ```
 
 2. Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL connection string. Never commit `.env` or paste database credentials into public issues.
-3. Apply `database/schema.sql` only after checking that the target database is correct and backed up. This SQL creates application tables; do not run it against an unknown production database without review.
+3. Apply `database/schema.sql` only after checking that the target database is correct and backed up. The additive workflow migration must also be reviewed and intentionally applied before its tables can be used. Neither database change has been verified against your live Supabase instance in this task.
 4. Start the API from the repository root:
 
    ```bash
@@ -52,7 +54,7 @@ source .venv/bin/activate
 PYTHONPATH=backend DATABASE_URL=sqlite:///./test.db pytest -q backend/tests
 ```
 
-The SQLite URL above is for smoke tests only. The production lead query uses PostgreSQL-specific schema qualification and expects `database/schema.sql` to have been applied.
+The SQLite URL above is for smoke tests only. The production lead query uses PostgreSQL-specific schema qualification and expects the schema to be applied.
 
 ## Run the frontend
 
@@ -71,7 +73,14 @@ npm run lint
 npm run build
 ```
 
-The default configuration enables demo mode so the frontend can be explored without a running backend. Set `NEXT_PUBLIC_DEMO_MODE=false` only when the API and required authentication are configured. The frontend must not silently fall back to mock data when live API requests fail.
+The default configuration enables demo mode so the frontend can be explored without a running backend. Set `NEXT_PUBLIC_DEMO_MODE=false` only when the API is configured. Live API failures must remain visible; the UI must not silently substitute mock data.
+
+## Current implementation limits
+
+- Authentication, password reset, server sessions and role-enforced route/API authorization are not implemented by the existing backend. The sign-in page is a non-authenticating UI.
+- Live lead listing is implemented outside the planned `/api/v1` contract. Lead create/update, conversations, aptitude persistence, course CRUD, demo-slot booking, follow-up CRUD, analytics, knowledge management and user administration are not end-to-end backend features yet.
+- External providers must be explicitly connected and verified before showing a Connected status. Otherwise label them **Simulated**.
+- The additive migration is a proposed database change, not proof of a working database connection.
 
 ## Safety rules
 
@@ -83,4 +92,4 @@ The default configuration enables demo mode so the frontend can be explored with
 - Respect consent, opt-outs, quiet hours, and human takeover.
 - Never commit secrets or real prospect personal data.
 
-This repository includes the shared specification and frontend foundation. Backend routes and external integrations must be verified before being described as operational.
+Do not describe the application as production-ready until the missing routes, auth controls, live database connection, provider integrations and end-to-end tests are implemented and verified.

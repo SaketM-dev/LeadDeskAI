@@ -2,9 +2,168 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
+/*
+ * AI Lead Desk design tokens.
+ * Feature pages still use some legacy Tailwind slate/indigo utilities; the
+ * compatibility layer below maps those utilities to tokens while the UI is
+ * migrated incrementally. Keep all palette values here.
+ */
+:root {
+  color-scheme: dark;
+  --color-page: #0e1116;
+  --color-surface: #161b22;
+  --color-raised: #1c2330;
+  --color-border: #2a3140;
+  --color-text: #f2f4f8;
+  --color-muted: #9aa4b2;
+  --color-subtle: #727f90;
+  --color-accent: #3d8bff;
+  --color-accent-strong: #0061fe;
+  --color-accent-soft: #162b4b;
+  --color-success: #35c98a;
+  --color-success-soft: #123528;
+  --color-warning: #f3bd54;
+  --color-warning-soft: #3a2d16;
+  --color-danger: #ff727f;
+  --color-danger-soft: #3e2028;
+  --color-purple: #c1a4ff;
+  --color-purple-soft: #2b2140;
+  --color-info: #79c7ff;
+  --color-info-soft: #172d40;
+  --color-focus: #78aaff;
+  --radius-card: 14px;
+  --radius-control: 9px;
+  --shadow-card: 0 8px 24px rgb(0 0 0 / 18%);
+  --shadow-raised: 0 12px 32px rgb(0 0 0 / 28%);
+  --space-page-x: clamp(1rem, 3vw, 2.25rem);
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.375rem;
+  --font-display: clamp(1.75rem, 3vw, 2.25rem);
+}
+
+* { box-sizing: border-box; }
 html, body { min-height: 100%; }
-body { margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
+html { background: var(--color-page); scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: var(--font-sm);
+  -webkit-font-smoothing: antialiased;
+}
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
-::selection { background: #c7d2fe; color: #312e81; }
+button:disabled { cursor: not-allowed; opacity: .58; }
+a { color: inherit; }
+::selection { background: var(--color-accent); color: #fff; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+input, select, textarea {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+input::placeholder, textarea::placeholder { color: var(--color-subtle); }
+option { background: var(--color-surface); color: var(--color-text); }
+
+/* Token-based primitives for new and migrated screens. */
+@layer components {
+  .ui-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+  .ui-card-raised {
+    background: var(--color-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-raised);
+  }
+  .ui-muted { color: var(--color-muted); }
+  .ui-subtle { color: var(--color-subtle); }
+  .ui-input {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: .625rem .75rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .ui-input:focus { border-color: var(--color-focus); box-shadow: 0 0 0 3px rgb(61 139 255 / 20%); outline: none; }
+  .ui-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    min-height: 2.5rem;
+    padding: .625rem .875rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    font-weight: 600;
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+  .ui-button:hover { transform: translateY(-1px); }
+  .ui-button-primary { background: var(--color-accent-strong); color: #fff; }
+  .ui-button-primary:hover { background: var(--color-accent); }
+  .ui-button-secondary { background: var(--color-raised); color: var(--color-text); border-color: var(--color-border); }
+  .ui-button-secondary:hover { background: var(--color-surface); }
+  .ui-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: .2rem .55rem;
+    font-size: var(--font-xs);
+    font-weight: 600;
+  }
+  .ui-empty {
+    display: grid;
+    place-items: center;
+    gap: .5rem;
+    min-height: 9rem;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--color-muted);
+  }
+}
+
+/*
+ * Compatibility bridge for existing feature pages. It maps old light palette
+ * utilities onto the token system so navigation between existing routes stays
+ * dark while those pages are refactored into semantic UI components.
+ */
+.bg-white { background-color: var(--color-surface) !important; }
+.bg-slate-50, .bg-slate-100 { background-color: var(--color-raised) !important; }
+.bg-slate-900, .bg-slate-950 { background-color: var(--color-page) !important; }
+.border-slate-50, .border-slate-100, .border-slate-200, .border-slate-300 { border-color: var(--color-border) !important; }
+.divide-slate-100 > :not([hidden]) ~ :not([hidden]), .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border) !important; }
+.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700 { color: var(--color-text) !important; }
+.text-slate-600, .text-slate-500 { color: var(--color-muted) !important; }
+.text-slate-400, .text-slate-300 { color: var(--color-subtle) !important; }
+.hover\:bg-slate-50:hover, .hover\:bg-slate-100:hover, .hover\:bg-slate-50\/70:hover { background-color: var(--color-raised) !important; }
+.bg-indigo-50, .bg-blue-50, .bg-sky-50, .bg-violet-50 { background-color: var(--color-accent-soft) !important; }
+.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-blue-700, .text-sky-600 { color: var(--color-accent) !important; }
+.border-indigo-100, .border-indigo-200, .border-blue-200, .border-sky-200 { border-color: var(--color-border) !important; }
+.bg-indigo-600 { background-color: var(--color-accent-strong) !important; }
+.hover\:bg-indigo-700:hover { background-color: var(--color-accent) !important; }
+.bg-emerald-50, .bg-green-100 { background-color: var(--color-success-soft) !important; }
+.text-emerald-600, .text-emerald-700, .text-green-800 { color: var(--color-success) !important; }
+.border-emerald-200 { border-color: var(--color-success) !important; }
+.bg-amber-50, .bg-yellow-50 { background-color: var(--color-warning-soft) !important; }
+.text-amber-500, .text-amber-600, .text-amber-700, .text-amber-900 { color: var(--color-warning) !important; }
+.border-amber-200 { border-color: var(--color-warning) !important; }
+.bg-rose-50, .bg-red-50 { background-color: var(--color-danger-soft) !important; }
+.text-rose-500, .text-rose-600, .text-rose-700 { color: var(--color-danger) !important; }
+.bg-purple-50 { background-color: var(--color-purple-soft) !important; }
+.text-purple-700, .text-violet-600, .text-violet-700 { color: var(--color-purple) !important; }
+.bg-cyan-50 { background-color: var(--color-info-soft) !important; }
+.text-cyan-700 { color: var(--color-info) !important; }
+.hover\:bg-indigo-50:hover { background-color: var(--color-accent-soft) !important; }
+.bg-white\/95 { background-color: rgb(22 27 34 / 95%) !important; }
+.shadow-sm { box-shadow: var(--shadow-card) !important; }
