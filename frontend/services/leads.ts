@@ -1,7 +1,7 @@
 import { apiFetch, ApiRequestError } from '@/lib/api-client';
 import { DEMO_MODE } from '@/lib/mode';
 import { demoLeads } from '@/fixtures/leads';
-import type { ApiList, CreateLeadInput, Lead, LeadStage } from '@/types/api';
+import type { ApiList, CreateLeadInput, Lead, LeadStage, LeadDetail, LeadTimelineEvent } from '@/types/api';
 
 export interface LeadFilters { q?: string; stage?: LeadStage; source?: string; assigned_to?: string; min_score?: number; limit?: number; cursor?: string; }
 function buildQuery(filters: LeadFilters): string {
@@ -28,11 +28,25 @@ export async function updateLeadStage(leadId: string, stage: LeadStage): Promise
 }
 
 
-export async function getLeadDetail(leadId: string): Promise<import('@/types/api').LeadDetail> {
+export async function getLeadDetail(leadId: string): Promise<LeadDetail> {
   if (DEMO_MODE) {
     throw new ApiRequestError('Lead details are supplied by the local demo fixture while demo mode is enabled.', 0, 'DEMO_MODE');
   }
-  return apiFetch<import('@/types/api').LeadDetail>(`/leads/${encodeURIComponent(leadId)}`);
+  const encodedId = encodeURIComponent(leadId);
+  const [profile, timelineResponse] = await Promise.all([
+    apiFetch<Partial<LeadDetail> & Lead>(`/leads/${encodedId}`),
+    apiFetch<ApiList<LeadTimelineEvent>>(`/leads/${encodedId}/timeline`),
+  ]);
+  return {
+    ...profile,
+    summary: profile.summary ?? [],
+    objections: profile.objections ?? [],
+    next_action: profile.next_action ?? 'Review the lead record and choose the next counselor action.',
+    consent: profile.consent ?? {},
+    // Fail closed: if takeover state is absent, do not expose an AI-release action.
+    human_takeover: profile.human_takeover ?? true,
+    timeline: timelineResponse.data ?? profile.timeline ?? [],
+  };
 }
 
 export async function addLeadNote(leadId: string, text: string): Promise<void> {
