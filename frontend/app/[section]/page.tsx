@@ -34,7 +34,7 @@ export default function FeaturePage() {
   const params=useParams<{section:string}>();
   const section=String(params.section||'leads');
   const meta=config[section]||{title:'Workspace section',subtitle:'Explore the AI Lead Desk workspace.',icon:'leads',description:'Records'};
-  const [leads,setLeads]=useState(leadSeed);
+  const [leads,setLeads]=useState(DEMO_MODE ? leadSeed : []);
   const [liveLoading,setLiveLoading]=useState(false);
   const [liveError,setLiveError]=useState('');
   const [query,setQuery]=useState('');
