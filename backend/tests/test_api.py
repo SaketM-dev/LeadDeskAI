@@ -434,3 +434,105 @@ def test_v1_lead_update_returns_404_for_missing_record(monkeypatch):
         json={"stage": "contacted"},
     )
     assert response.status_code == 404
+
+
+def test_v1_lead_assignment_validates_ids_and_auth(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    base = "/api/v1/leads/11111111-1111-4111-8111-111111111111/assign"
+    assert client.post(base, json={"user_id": "22222222-2222-4222-8222-222222222222"}).status_code == 401
+    response = client.post(
+        "/api/v1/leads/not-a-uuid/assign",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"user_id": "not-a-uuid"},
+    )
+    assert response.status_code == 422
+
+
+def test_v1_lead_assignment_updates_and_audits(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    executed = []
+
+    class FakeResult:
+        def __init__(self, row):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            executed.append(sql)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult({"id": params["lead_id"]})
+            if "SELECT id FROM public.app_users" in sql:
+                return FakeResult({"id": params["user_id"]})
+            if "UPDATE public.leads" in sql:
+                return FakeResult({
+                    "id": params["lead_id"],
+                    "full_name": "Asha Patil",
+                    "assigned_user_id": params["user_id"],
+                    "stage": "new",
+                })
+            if "INSERT INTO public.audit_events" in sql:
+                assert '"actor": "shared_token"' in params["details"]
+                return FakeResult(None)
+            raise AssertionError(f"Unexpected SQL: {sql}")
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/assign",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"user_id": "22222222-2222-4222-8222-222222222222"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["assigned_user_id"] == "22222222-2222-4222-8222-222222222222"
+    assert any("INSERT INTO public.audit_events" in sql for sql in executed)
+
+
+def test_v1_lead_assignment_returns_404_for_missing_staff_user(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def __init__(self, row):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            if "SELECT id FROM public.leads" in str(statement):
+                return FakeResult({"id": params["lead_id"]})
+            if "SELECT id FROM public.app_users" in str(statement):
+                return FakeResult(None)
+            raise AssertionError(f"Unexpected SQL: {statement}")
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/assign",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"user_id": "22222222-2222-4222-8222-222222222222"},
+    )
+    assert response.status_code == 404
+
