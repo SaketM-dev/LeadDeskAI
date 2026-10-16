@@ -44,37 +44,85 @@ export default function LeadDetailPage() {
     </section>;
   }
 
-  const updateStage = (stage: LeadStage) => {
+  const updateStage = async (stage: LeadStage) => {
+    if (!DEMO_MODE) {
+      try {
+        await updateLeadStage(lead.id, stage);
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Stage update failed.');
+        return;
+      }
+    }
     setLead(current => current ? { ...current, stage } : current);
-    setNotice('Stage changed in local demo state only; it was not persisted to the backend.');
-    setEvents(current => [{ id: `local-stage-${Date.now()}`, type: 'stage_change', title: 'Stage updated (demo)', description: `Stage set to ${stageLabels[stage]}.`, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
+    setNotice(DEMO_MODE ? 'Stage changed in local demo state only; it was not persisted to the backend.' : 'Lead stage updated through the API.');
+    setEvents(current => [{ id: `local-stage-${Date.now()}`, type: 'stage_change', title: DEMO_MODE ? 'Stage updated (demo)' : 'Stage updated', description: `Stage set to ${stageLabels[stage]}.`, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
   };
 
-  const toggleHandoff = () => {
+  const toggleHandoff = async () => {
     const next = !lead.human_takeover;
+    if (!DEMO_MODE) {
+      try {
+        if (next) await handoffLead(lead.id, 'human_requested');
+        else if (lead.conversation_id) await releaseLeadToAI(lead.conversation_id);
+        else {
+          setNotice('Cannot release to AI: the API response did not include a conversation ID.');
+          return;
+        }
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Handoff update failed.');
+        return;
+      }
+    }
     setLead(current => current ? { ...current, human_takeover: next } : current);
-    setNotice(next
-      ? 'Human takeover enabled locally. In live mode, the backend must pause AI outbound messages.'
-      : 'AI release recorded locally only. Live mode requires explicit counselor release through the API.');
-    setEvents(current => [{ id: `local-handoff-${Date.now()}`, type: 'handoff', title: next ? 'Human takeover enabled (demo)' : 'AI release selected (demo)', description: next ? 'AI replies should remain paused while a counselor owns the conversation.' : 'This local demo does not resume a real AI conversation.', occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
+    setNotice(DEMO_MODE
+      ? (next ? 'Human takeover enabled locally. No live AI messages are affected.' : 'AI release recorded locally only; no real conversation was resumed.')
+      : (next ? 'Human handoff requested through the API.' : 'Release-to-AI request completed through the API.'));
+    setEvents(current => [{ id: `local-handoff-${Date.now()}`, type: 'handoff', title: next ? (DEMO_MODE ? 'Human takeover enabled (demo)' : 'Human takeover enabled') : (DEMO_MODE ? 'AI release selected (demo)' : 'Released to AI'), description: next ? 'AI replies should remain paused while a counselor owns the conversation.' : 'Release was explicitly requested by the counselor.', occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
   };
 
-  const addNote = (event: React.FormEvent<HTMLFormElement>) => {
+  const addNote = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = note.trim();
     if (!text) return;
-    setEvents(current => [{ id: `local-note-${Date.now()}`, type: 'note', title: 'Counselor note (demo)', description: text, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
+    if (!DEMO_MODE) {
+      try {
+        await addLeadNote(lead.id, text);
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Could not save note.');
+        return;
+      }
+    }
+    setEvents(current => [{ id: `local-note-${Date.now()}`, type: 'note', title: DEMO_MODE ? 'Counselor note (demo)' : 'Counselor note', description: text, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
     setNote('');
-    setNotice('Note added to local page state only. It is not stored on the server.');
+    setNotice(DEMO_MODE ? 'Note added to local page state only. It is not stored on the server.' : 'Counselor note saved through the API.');
   };
 
-  const addFollowUp = (event: React.FormEvent<HTMLFormElement>) => {
+  const addFollowUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = followUpText.trim();
     if (!text) return;
-    setEvents(current => [{ id: `local-task-${Date.now()}`, type: 'follow_up', title: 'Follow-up task drafted (demo)', description: `${text} · Due: ${followUpWhen}`, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
+    if (!DEMO_MODE) {
+      try {
+        const due = new Date();
+        if (followUpWhen === 'tomorrow') due.setDate(due.getDate() + 1);
+        else if (followUpWhen === 'within 3 days') due.setDate(due.getDate() + 3);
+        await createFollowUp({
+          lead_id: lead.id,
+          channel: Object.entries(lead.consent).find(([channel, allowed]) => allowed && channel !== 'marketing')?.[0] ?? 'internal',
+          action_type: 'counselor_follow_up',
+          reason: 'Created from the lead detail page',
+          suggested_message: text,
+          scheduled_at: due.toISOString(),
+          priority: 'normal',
+        });
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Could not create follow-up.');
+        return;
+      }
+    }
+    setEvents(current => [{ id: `local-task-${Date.now()}`, type: 'follow_up', title: DEMO_MODE ? 'Follow-up task drafted (demo)' : 'Follow-up task created', description: `${text} · Due: ${followUpWhen}`, occurred_at: new Date().toISOString(), actor: 'Current counselor' }, ...current]);
     setFollowUpOpen(false);
-    setNotice('Follow-up drafted locally. No message is scheduled or sent.');
+    setNotice(DEMO_MODE ? 'Follow-up drafted locally. No message is scheduled or sent.' : 'Follow-up task created through the API. The worker must still enforce consent, opt-outs and quiet hours.');
   };
 
   const eventIcon = (type: string) => {

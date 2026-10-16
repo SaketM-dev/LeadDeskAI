@@ -51,6 +51,7 @@ export interface LeadTimelineEvent {
   actor?: string;
 }
 export interface LeadDetail extends Lead {
+  conversation_id?: UUID;
   phone?: string;
   email?: string;
   course_interest?: string;

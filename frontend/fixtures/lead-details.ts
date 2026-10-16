@@ -65,7 +65,5 @@ export const demoLeadDetails: Record<string, LeadDetail> = {
 };
 
 export function getDemoLeadDetail(leadId: string): LeadDetail | undefined {
-  const normalizedId = leadId.startsWith('LD-') ? leadId.replace(/^LD-/, 'demo-') : leadId;
-  const detail = demoLeadDetails[leadId] ?? demoLeadDetails[normalizedId];
-  return detail ? { ...detail, id: leadId } : undefined;
+  return demoLeadDetails[leadId];
 }
