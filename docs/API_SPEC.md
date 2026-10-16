@@ -10,7 +10,8 @@ Use Idempotency-Key for replies, bookings and side-effecting jobs. All write rou
 
 ## 1. Health and users
 - GET /health — liveness.
-- GET /ready — readiness incl. database and worker status.
+- GET /ready — readiness probe; currently verifies database connectivity (worker status is not yet implemented).
+- GET /api/v1/health — versioned liveness endpoint; does not require a database connection.
 - GET /me — authenticated user and role.
 
 ## 2. Leads and timeline
