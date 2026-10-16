@@ -194,3 +194,83 @@ def create_simulated_counselor_message(conversation_id: str, payload: SimulatedM
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="Message record could not be saved. Apply the admissions workflow migration.")
     return {"data": dict(message), "notice": "Stored as simulated history only; no message was sent."}
+
+
+@router.post("/conversations/{conversation_id}/takeover", dependencies=[Depends(require_api_token)])
+def take_over_conversation(conversation_id: str):
+    """Pause automated handling by setting the simulated human-takeover flag."""
+    try:
+        parsed_id = str(UUID(conversation_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="conversation_id must be a valid UUID.")
+    try:
+        with engine.begin() as connection:
+            conversation = connection.execute(text("""
+                SELECT id, lead_id, status, human_takeover
+                FROM public.conversations WHERE id = :conversation_id FOR UPDATE
+            """), {"conversation_id": parsed_id}).mappings().first()
+            if conversation is None:
+                raise HTTPException(status_code=404, detail="Conversation not found.")
+            if conversation["status"] != "open":
+                raise HTTPException(status_code=409, detail="Conversation is closed.")
+            if conversation["human_takeover"]:
+                raise HTTPException(status_code=409, detail="Human takeover is already active.")
+            row = connection.execute(text("""
+                UPDATE public.conversations
+                SET human_takeover = true, updated_at = now()
+                WHERE id = :conversation_id
+                RETURNING id, lead_id, channel, provider_mode, status, human_takeover,
+                          preferred_language, consent_checked_at, created_at, updated_at
+            """), {"conversation_id": parsed_id}).mappings().one()
+            connection.execute(text("""
+                INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
+                VALUES (NULL, 'conversation.human_takeover_started', 'lead', :lead_id, CAST(:details AS jsonb))
+            """), {"lead_id": str(conversation["lead_id"]), "details": json.dumps({
+                "conversation_id": parsed_id, "actor": "shared_token",
+                "automation_paused": True,
+            })})
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Takeover could not be saved. Apply the admissions workflow migration.")
+    return {"data": dict(row), "notice": "Human takeover flag is active. This does not authenticate a specific counselor."}
+
+
+@router.post("/conversations/{conversation_id}/release-to-ai", dependencies=[Depends(require_api_token)])
+def release_conversation_to_ai(conversation_id: str):
+    """Explicitly clear the simulated human-takeover flag; no AI provider is invoked."""
+    try:
+        parsed_id = str(UUID(conversation_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="conversation_id must be a valid UUID.")
+    try:
+        with engine.begin() as connection:
+            conversation = connection.execute(text("""
+                SELECT id, lead_id, status, human_takeover
+                FROM public.conversations WHERE id = :conversation_id FOR UPDATE
+            """), {"conversation_id": parsed_id}).mappings().first()
+            if conversation is None:
+                raise HTTPException(status_code=404, detail="Conversation not found.")
+            if conversation["status"] != "open":
+                raise HTTPException(status_code=409, detail="Conversation is closed.")
+            if not conversation["human_takeover"]:
+                raise HTTPException(status_code=409, detail="Human takeover is not active.")
+            row = connection.execute(text("""
+                UPDATE public.conversations
+                SET human_takeover = false, updated_at = now()
+                WHERE id = :conversation_id
+                RETURNING id, lead_id, channel, provider_mode, status, human_takeover,
+                          preferred_language, consent_checked_at, created_at, updated_at
+            """), {"conversation_id": parsed_id}).mappings().one()
+            connection.execute(text("""
+                INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
+                VALUES (NULL, 'conversation.human_takeover_released', 'lead', :lead_id, CAST(:details AS jsonb))
+            """), {"lead_id": str(conversation["lead_id"]), "details": json.dumps({
+                "conversation_id": parsed_id, "actor": "shared_token",
+                "automation_resumed": False,
+            })})
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="Release could not be saved. Apply the admissions workflow migration.")
+    return {"data": dict(row), "notice": "Takeover flag cleared. No AI provider was invoked and no messages were sent."}
