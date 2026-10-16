@@ -49,7 +49,7 @@ Backend smoke tests:
 
 ```bash
 source .venv/bin/activate
-DATABASE_URL=sqlite:///./test.db pytest -q backend/tests
+PYTHONPATH=backend DATABASE_URL=sqlite:///./test.db pytest -q backend/tests
 ```
 
 The SQLite URL above is for smoke tests only. The production lead query uses PostgreSQL-specific schema qualification and expects `database/schema.sql` to have been applied.
