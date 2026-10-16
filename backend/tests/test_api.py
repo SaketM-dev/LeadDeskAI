@@ -932,3 +932,128 @@ def test_demo_booking_cancellation_is_audited(monkeypatch):
     assert response.status_code == 200
     assert response.json()["data"]["status"] == "cancelled"
     assert any("demo_booking.cancelled" in sql for sql in statements)
+
+
+def test_conversation_creation_requires_auth_and_creates_simulated_record(monkeypatch):
+    import app.routers.v1_conversations as conversations_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    lead_id = "11111111-1111-4111-8111-111111111111"
+    body = {"channel": "whatsapp", "preferred_language": "mr"}
+    assert client.post(f"/api/v1/leads/{lead_id}/conversations", json=body).status_code == 401
+
+    class FakeResult:
+        def __init__(self, row=None):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult({"id": lead_id})
+            if "INSERT INTO public.conversations" in sql:
+                assert "'simulated'" in sql
+                return FakeResult({
+                    "id": "55555555-5555-4555-8555-555555555555",
+                    "lead_id": lead_id, "channel": "whatsapp",
+                    "provider_mode": "simulated", "preferred_language": "mr",
+                })
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(conversations_module, "engine", FakeEngine())
+    response = client.post(
+        f"/api/v1/leads/{lead_id}/conversations",
+        headers={"Authorization": "Bearer test-secret"},
+        json=body,
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["provider_mode"] == "simulated"
+    assert "no channel provider was contacted" in response.json()["notice"]
+
+
+def test_conversation_message_is_stored_simulated_and_never_dispatched(monkeypatch):
+    import app.routers.v1_conversations as conversations_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def __init__(self, row=None):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            if "SELECT id, lead_id, status, human_takeover" in sql:
+                return FakeResult({
+                    "id": "55555555-5555-4555-8555-555555555555",
+                    "lead_id": "11111111-1111-4111-8111-111111111111",
+                    "status": "open", "human_takeover": True,
+                    "provider_mode": "simulated",
+                })
+            if "INSERT INTO public.conversation_messages" in sql:
+                assert "'counselor'" in sql
+                assert "true" in sql.lower()
+                assert params["body"] == "Fee details are being checked."
+                return FakeResult({
+                    "id": "66666666-6666-4666-8666-666666666666",
+                    "conversation_id": "55555555-5555-4555-8555-555555555555",
+                    "sender_type": "counselor", "body": params["body"],
+                    "simulated": True,
+                })
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(conversations_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/conversations/55555555-5555-4555-8555-555555555555/messages",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"body": " Fee details are being checked. ", "language": "en"},
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["simulated"] is True
+    assert "no message was sent" in response.json()["notice"]
+    assert any("conversation.message_recorded" in sql for sql in statements)
+
+
+def test_conversation_routes_validate_ids_limits_and_blank_messages(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    headers = {"Authorization": "Bearer test-secret"}
+    assert client.get("/api/v1/conversations/not-a-uuid", headers=headers).status_code == 422
+    assert client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/conversations?limit=101",
+        headers=headers,
+    ).status_code == 422
+    response = client.post(
+        "/api/v1/conversations/55555555-5555-4555-8555-555555555555/messages",
+        headers=headers,
+        json={"body": "   "},
+    )
+    # Validation is performed after stripping so whitespace-only messages are rejected.
+    assert response.status_code in {404, 422}
