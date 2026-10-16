@@ -186,3 +186,90 @@ def test_v1_leads_validates_page_size(monkeypatch):
         headers={"Authorization": "Bearer test-secret"},
     )
     assert response.status_code == 422
+
+
+def test_v1_lead_creation_requires_bearer_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post("/api/v1/leads", json={"full_name": "Asha Patil"})
+    assert response.status_code == 401
+
+
+def test_v1_lead_creation_validates_source_and_language(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    headers = {"Authorization": "Bearer test-secret"}
+    bad_source = client.post("/api/v1/leads", headers=headers, json={"full_name": "Asha", "source": "unknown-channel"})
+    bad_language = client.post("/api/v1/leads", headers=headers, json={"full_name": "Asha", "preferred_language": "fr"})
+    assert bad_source.status_code == 422
+    assert bad_language.status_code == 422
+
+
+def test_v1_lead_creation_saves_explicit_consent_defaults(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def one(self):
+            return {
+                "id": "lead-2",
+                "full_name": "Asha Patil",
+                "preferred_language": "mr",
+                "stage": "new",
+                "lead_score": 0,
+                "first_touch_source": "website_form",
+                "last_touch_source": "website_form",
+                "created_at": "2026-10-17T10:00:00+00:00",
+                "updated_at": "2026-10-17T10:00:00+00:00",
+            }
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            assert params["full_name"] == "Asha Patil"
+            assert params["marketing_consent"] is False
+            assert params["whatsapp_consent"] is False
+            assert params["email_consent"] is False
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/leads",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"full_name": " Asha Patil ", "preferred_language": "mr", "source": "website_form"},
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["full_name"] == "Asha Patil"
+
+
+def test_v1_lead_creation_returns_503_on_database_failure(monkeypatch):
+    from sqlalchemy.exc import SQLAlchemyError
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class BrokenConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            raise SQLAlchemyError("database unavailable")
+
+    class BrokenEngine:
+        def begin(self):
+            return BrokenConnection()
+
+    monkeypatch.setattr(leads_module, "engine", BrokenEngine())
+    response = client.post(
+        "/api/v1/leads",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"full_name": "Asha Patil"},
+    )
+    assert response.status_code == 503
