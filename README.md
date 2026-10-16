@@ -1,23 +1,55 @@
 # AI Lead Desk
 
-AI-powered admissions and lead management for education businesses. Unifies enquiries from WhatsApp, Instagram, calls, forms and walk-ins; supports English, Hindi, Marathi and code-switching; grounds course answers in institute-approved knowledge; schedules demos; and prioritizes follow-ups.
+AI-assisted admissions lead management for education teams. The application is designed to unify enquiries, counselor conversations, approved course knowledge, aptitude guidance, demo bookings, follow-up tasks, and admissions analytics.
 
-> **Demo data warning:** Sample course fees, durations and schedules in knowledge_base/courses.json are fictional placeholders, not verified details about TechSummitTrainers or any institute. Replace and approve before prospect-facing use.
+> **Demo data warning:** Sample course fees, durations, and schedules in `knowledge_base/courses.json` are fictional placeholders, not verified details about TechSummitTrainers or any institute. They must be reviewed and approved before prospect-facing use.
 
-## Shared contract
-- [SPEC.md](SPEC.md) — scope, workflow, architecture, data rules and acceptance checklist.
-- [docs/API_SPEC.md](docs/API_SPEC.md) — endpoint and payload contract.
-- [database/schema.sql](database/schema.sql) — PostgreSQL MVP schema (18 tables).
-- [knowledge_base/KNOWLEDGE_BASE.md](knowledge_base/KNOWLEDGE_BASE.md) — counselor rules and 4 sample courses.
-- [knowledge_base/courses.json](knowledge_base/courses.json) — structured course facts.
-- [docs/DECISIONS.md](docs/DECISIONS.md) — shared decisions before parallel coding.
-- [docs/TEAM_WORKFLOW.md](docs/TEAM_WORKFLOW.md) — branch and integration workflow.
-- [.env.example](.env.example) — local config template; never put real secrets in Git.
+## Shared project contracts
 
-## Suggested MVP stack
-Frontend: Next.js + TypeScript. API: Python + FastAPI under /api/v1. DB: PostgreSQL. Worker: Redis-backed jobs for follow-ups/reminders. AI, speech, channels and calendar are adapter-based; disconnected integrations must be clearly labelled mock/simulated.
+- `SPEC.md` — product scope, workflow, architecture, and acceptance criteria.
+- `docs/API_SPEC.md` — API endpoints and payload contracts.
+- `database/schema.sql` — PostgreSQL schema.
+- `knowledge_base/KNOWLEDGE_BASE.md` — counselor rules and sample knowledge.
+- `knowledge_base/courses.json` — sample course records.
+- `docs/DECISIONS.md` — shared architecture and data decisions.
+- `docs/TEAM_WORKFLOW.md` — branch and integration workflow.
+- `docs/FRONTEND.md` — frontend setup and architecture.
 
-## Important product rules
-Never invent fees, discounts, schedules or placement guarantees. Unsupported questions become counselor tasks. Never merge people solely on name similarity. Confirm bookings only after calendar success. Respect consent, opt-outs, quiet hours and human takeover.
+## Architecture
 
-This repository contains the shared specification and data contracts to begin parallel development; it is not yet a complete running application.
+- Frontend: Next.js App Router and TypeScript (`frontend/`).
+- Business API: Python FastAPI under `/api/v1`.
+- Database: PostgreSQL.
+- Jobs and reminders: worker-backed jobs where implemented.
+- External channels, AI and calendar providers: adapter-based; disconnected providers must be labelled as simulated.
+
+## Run the frontend
+
+```bash
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+### Validation
+
+```bash
+npm run type-check
+npm run lint
+npm run build
+```
+
+The default configuration enables demo mode so the frontend can be explored without a running backend. Set `NEXT_PUBLIC_DEMO_MODE=false` only when the API and required authentication are configured. The frontend must not silently fall back to mock data when live API requests fail.
+
+## Safety rules
+
+- Never invent course fees, schedules, discounts, eligibility, or placement guarantees.
+- Use approved, current knowledge for course-specific claims.
+- Unsupported questions should be escalated for counselor confirmation.
+- Never merge leads solely because their names look similar.
+- Confirm bookings only after backend/provider confirmation.
+- Respect consent, opt-outs, quiet hours, and human takeover.
+- Never commit secrets or real prospect personal data.
+
+This repository includes the shared specification and frontend foundation. Backend routes and external integrations must be verified before being described as operational.
