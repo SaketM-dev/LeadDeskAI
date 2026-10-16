@@ -265,3 +265,50 @@ def assign_lead(lead_id: str, payload: LeadAssignment):
 
     return {"data": dict(updated)}
 
+class LeadNoteCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=5000)
+
+
+@router.post("/{lead_id}/notes", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+def create_lead_note(lead_id: str, payload: LeadNoteCreate):
+    """Add an internal note without sending a prospect-facing message."""
+    from uuid import UUID
+
+    try:
+        parsed_lead_id = str(UUID(lead_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="lead_id must be a valid UUID.")
+
+    body = payload.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Note body cannot be blank.")
+
+    try:
+        with engine.begin() as connection:
+            lead = connection.execute(
+                text("SELECT id FROM public.leads WHERE id = :lead_id AND merged_into_lead_id IS NULL FOR UPDATE"),
+                {"lead_id": parsed_lead_id},
+            ).mappings().first()
+            if lead is None:
+                raise HTTPException(status_code=404, detail="Lead not found.")
+
+            note = connection.execute(text("""
+                INSERT INTO public.lead_notes (lead_id, author_id, body)
+                VALUES (:lead_id, NULL, :body)
+                RETURNING id, lead_id, author_id, body, created_at
+            """), {"lead_id": parsed_lead_id, "body": body}).mappings().one()
+            connection.execute(text("""
+                INSERT INTO public.audit_events
+                    (actor_id, event_type, entity_type, entity_id, details)
+                VALUES (NULL, 'lead.note_added', 'lead', :lead_id, CAST(:details AS jsonb))
+            """), {"lead_id": parsed_lead_id, "details": '{"actor":"shared_token"}'})
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Note could not be saved. Apply the admissions workflow migration and verify the database.",
+        )
+
+    return {"data": dict(note)}
+
