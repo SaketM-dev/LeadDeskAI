@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft, AlertTriangle, CalendarClock, CheckCircle2, Clock3, MessageSquare,
@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { DEMO_MODE } from '@/lib/mode';
 import { getDemoLeadDetail } from '@/fixtures/lead-details';
-import type { LeadStage, LeadTimelineEvent } from '@/types/api';
+import { addLeadNote, createFollowUp, getLeadDetail, handoffLead, releaseLeadToAI, updateLeadStage } from '@/services/leads';
+import type { LeadDetail, LeadStage, LeadTimelineEvent } from '@/types/api';
 
 const stageOptions: { value: LeadStage; label: string }[] = [
   { value: 'new', label: 'New' }, { value: 'contacted', label: 'Contacted' },
@@ -27,7 +28,8 @@ export default function LeadDetailPage() {
   const params = useParams<{ leadId: string }>();
   const leadId = decodeURIComponent(params.leadId);
   const original = useMemo(() => getDemoLeadDetail(leadId), [leadId]);
-  const [lead, setLead] = useState(original);
+  const [lead, setLead] = useState<LeadDetail | null>(DEMO_MODE ? original : null);
+  const [loading, setLoading] = useState(!DEMO_MODE);
   const [note, setNote] = useState('');
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [followUpText, setFollowUpText] = useState('Confirm approved course details with the admissions team.');
@@ -35,11 +37,39 @@ export default function LeadDetailPage() {
   const [notice, setNotice] = useState('');
   const [events, setEvents] = useState<LeadTimelineEvent[]>(original?.timeline ?? []);
 
+  useEffect(() => {
+    if (DEMO_MODE) {
+      setLead(original);
+      setEvents(original?.timeline ?? []);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    getLeadDetail(leadId)
+      .then(result => {
+        if (cancelled) return;
+        setLead(result);
+        setEvents(result.timeline ?? []);
+      })
+      .catch(error => {
+        if (cancelled) return;
+        setLead(null);
+        setNotice(error instanceof Error ? error.message : 'Could not load this lead from the backend.');
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [leadId, original]);
+
+  if (loading) {
+    return <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center"><p className="text-sm text-slate-600">Loading lead from the FastAPI backend…</p></section>;
+  }
+
   if (!lead) {
     return <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center">
       <AlertTriangle className="mx-auto text-amber-500" size={28} />
       <h1 className="mt-4 text-xl font-bold">Lead not found</h1>
-      <p className="mt-2 text-sm text-slate-500">This ID is not in the local demo fixtures. Live lead details require a verified backend connection.</p>
+      <p className="mt-2 text-sm text-slate-500">{notice || (DEMO_MODE ? 'This ID is not in the local demo fixtures.' : 'This lead was not returned by the backend lead-list endpoint.')}</p>
       <Link href="/leads" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><ArrowLeft size={16}/> Back to leads</Link>
     </section>;
   }
