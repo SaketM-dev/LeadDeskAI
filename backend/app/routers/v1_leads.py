@@ -312,3 +312,75 @@ def create_lead_note(lead_id: str, payload: LeadNoteCreate):
 
     return {"data": dict(note)}
 
+@router.get("/{lead_id}/timeline", dependencies=[Depends(require_api_token)])
+def get_lead_timeline(
+    lead_id: str,
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    """Return a bounded, newest-first timeline across notes, messages, tasks, bookings and audit events."""
+    from uuid import UUID
+
+    try:
+        parsed_lead_id = str(UUID(lead_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="lead_id must be a valid UUID.")
+
+    statement = text("""
+        WITH timeline AS (
+            SELECT n.id::text AS event_id, 'note'::text AS event_type,
+                   n.body AS summary, n.created_at AS occurred_at,
+                   jsonb_build_object('author_id', n.author_id) AS details
+            FROM public.lead_notes n
+            WHERE n.lead_id = :lead_id
+            UNION ALL
+            SELECT m.id::text, 'message'::text,
+                   m.sender_type || ': ' || left(m.body, 500), m.created_at,
+                   jsonb_build_object('conversation_id', m.conversation_id,
+                                      'language', m.language, 'simulated', m.simulated)
+            FROM public.conversation_messages m
+            JOIN public.conversations c ON c.id = m.conversation_id
+            WHERE c.lead_id = :lead_id
+            UNION ALL
+            SELECT t.id::text, 'follow_up'::text, t.title, t.created_at,
+                   jsonb_build_object('status', t.status, 'priority', t.priority,
+                                      'due_at', t.due_at, 'assigned_to', t.assigned_to)
+            FROM public.follow_up_tasks t
+            WHERE t.lead_id = :lead_id
+            UNION ALL
+            SELECT b.id::text, 'demo_booking'::text, 'Demo booking: ' || b.status,
+                   b.created_at,
+                   jsonb_build_object('starts_at', b.starts_at, 'ends_at', b.ends_at,
+                                      'status', b.status, 'provider_mode', b.provider_mode)
+            FROM public.demo_bookings b
+            WHERE b.lead_id = :lead_id
+            UNION ALL
+            SELECT a.id::text, a.event_type, a.event_type, a.created_at, a.details
+            FROM public.audit_events a
+            WHERE a.entity_type = 'lead' AND a.entity_id = CAST(:lead_id AS uuid)
+        )
+        SELECT event_id, event_type, summary, occurred_at, details
+        FROM timeline
+        ORDER BY occurred_at DESC, event_id DESC
+        LIMIT :limit
+    """)
+    try:
+        with engine.connect() as connection:
+            lead = connection.execute(
+                text("SELECT id FROM public.leads WHERE id = :lead_id AND merged_into_lead_id IS NULL"),
+                {"lead_id": parsed_lead_id},
+            ).mappings().first()
+            if lead is None:
+                raise HTTPException(status_code=404, detail="Lead not found.")
+            rows = connection.execute(
+                statement, {"lead_id": parsed_lead_id, "limit": limit}
+            ).mappings().all()
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Lead timeline is unavailable. Apply the admissions workflow migration and verify the database.",
+        )
+
+    return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
+
