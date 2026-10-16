@@ -51,3 +51,49 @@ def test_lead_list_returns_503_when_database_is_unavailable(monkeypatch):
     response = client.get("/api/leads")
     assert response.status_code == 503
     assert "database/schema.sql" in response.json()["detail"]
+
+
+def test_versioned_health_endpoint_is_database_independent():
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy", "api_version": "v1"}
+
+
+def test_readiness_returns_ready_when_database_query_succeeds(monkeypatch):
+    import app.main as main_module
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def execute(self, statement):
+            return None
+
+    class AvailableEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(main_module, "engine", AvailableEngine())
+    response = client.get("/ready")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ready",
+        "checks": {"database": "connected"},
+    }
+
+
+def test_readiness_returns_503_when_database_is_unavailable(monkeypatch):
+    from sqlalchemy.exc import SQLAlchemyError
+    import app.main as main_module
+
+    class UnavailableEngine:
+        def connect(self):
+            raise SQLAlchemyError("database unavailable")
+
+    monkeypatch.setattr(main_module, "engine", UnavailableEngine())
+    response = client.get("/ready")
+    assert response.status_code == 503
+    assert response.json()["detail"]["status"] == "not_ready"
