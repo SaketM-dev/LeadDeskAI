@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { DEMO_MODE } from '@/lib/mode';
 import {
   Activity, BarChart3, BookOpen, CalendarDays, ChevronDown, GraduationCap,
   LayoutDashboard, ListTodo, Menu, MessageSquare, Search, Settings,
@@ -52,11 +53,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="lg:pl-64">
       <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open navigation"><Menu size={20}/></button><div className="hidden text-sm text-slate-400 sm:block">Workspace <span className="mx-2">/</span><span className="font-medium text-slate-700">{navigation.find(n => n.href === pathname)?.label || (pathname === '/' ? 'Overview' : pathname.split('/')[1]?.replace(/-/g,' '))}</span></div></div>
-        <div className="flex items-center gap-3"><span className="hidden items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-purple-500"/>DEMO MODE</span><div className="hidden h-7 w-px bg-slate-200 sm:block"/><button className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-slate-50"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">AC</div><span className="hidden text-left sm:block"><span className="block text-xs font-semibold">Counselor</span><span className="block text-[10px] text-slate-500">Administrator</span></span><ChevronDown size={14} className="text-slate-400"/></button></div>
+        <div className="flex items-center gap-3"><span className="hidden items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-purple-500"/>{DEMO_MODE ? 'DEMO MODE' : 'LIVE LEAD DATA'}</span><div className="hidden h-7 w-px bg-slate-200 sm:block"/><button className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-slate-50"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">AC</div><span className="hidden text-left sm:block"><span className="block text-xs font-semibold">Counselor</span><span className="block text-[10px] text-slate-500">Administrator</span></span><ChevronDown size={14} className="text-slate-400"/></button></div>
       </header>
-      <div className="border-b border-purple-200 bg-purple-50 px-4 py-2 text-center text-[11px] font-medium text-purple-800 sm:text-xs">Demo environment — prospect records, course details, messages and bookings shown here are illustrative. No real messages or bookings are sent.</div>
+      <div className="border-b border-purple-200 bg-purple-50 px-4 py-2 text-center text-[11px] font-medium text-purple-800 sm:text-xs">{DEMO_MODE ? 'Demo environment — prospect records, course details, messages and bookings shown here are illustrative. No real messages or bookings are sent.' : 'Live mode — lead records may come from FastAPI. Counseling, courses, bookings, follow-ups and analytics remain illustrative or unavailable until their backend routes are implemented.'}</div>
       <main className="mx-auto max-w-[1500px] px-4 py-7 sm:px-7 lg:px-9">{children}</main>
-      <footer className="px-7 pb-6 text-center text-[10px] text-slate-400">AI Lead Desk · Phase 1 frontend · Verify backend and provider integrations before live use.</footer>
+      <footer className="px-7 pb-6 text-center text-[10px] text-slate-400">AI Lead Desk · Frontend demo/live-lead adapter · Verify database, authentication and provider integrations before live use.</footer>
     </div>
   </div>;
 }
