@@ -175,11 +175,11 @@ export default function LeadDetailPage() {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setFollowUpOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold hover:bg-slate-50"><Plus size={14}/> Create follow-up</button>
-        <button onClick={toggleHandoff} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold ${lead.human_takeover ? 'bg-amber-100 text-amber-900' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>{lead.human_takeover ? <PlayCircle size={14}/> : <PauseCircle size={14}/>} {lead.human_takeover ? 'Release to AI (demo)' : 'Take over conversation'}</button>
+        <button onClick={toggleHandoff} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold ${lead.human_takeover ? 'bg-amber-100 text-amber-900' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>{lead.human_takeover ? <PlayCircle size={14}/> : <PauseCircle size={14}/>} {lead.human_takeover ? (DEMO_MODE ? 'Release to AI (demo)' : 'Release to AI') : 'Take over conversation'}</button>
       </div>
     </div>
 
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><ShieldCheck className="mr-2 inline" size={15}/><strong>Demo mode.</strong> All values are fictional. Changes stay in local page state; no messages, bookings, notes or tasks are sent or persisted. Live mode must enforce consent, opt-outs, authorization and human-handoff rules on the server.</div>
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><ShieldCheck className="mr-2 inline" size={15}/>{DEMO_MODE ? <><strong>Demo mode.</strong> All values are fictional. Changes stay in local page state; no messages, bookings, notes or tasks are sent or persisted.</> : <><strong>Limited live mode.</strong> The profile is derived from GET /api/leads. The current backend does not expose timeline, note, follow-up, stage-update or handoff routes, so those operations will report as unavailable rather than pretending to save.</>}</div>
 
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
       <div className="space-y-5">
