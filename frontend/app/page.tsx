@@ -21,7 +21,7 @@ const followups = [
 const stageStyle: Record<string,string> = { Qualified:'bg-emerald-50 text-emerald-700', Contacted:'bg-blue-50 text-blue-700', Interested:'bg-violet-50 text-violet-700', New:'bg-slate-100 text-slate-600', 'Demo booked':'bg-amber-50 text-amber-700' };
 
 export default function DashboardPage() {
-  const [leads, setLeads] = useState(initialLeads);
+  const [leads, setLeads] = useState(DEMO_MODE ? initialLeads : []);
   const [apiError, setApiError] = useState('');
   const [apiLoading, setApiLoading] = useState(false);
   useEffect(() => {
