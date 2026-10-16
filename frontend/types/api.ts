@@ -31,3 +31,44 @@ export interface DashboardSummary {
   new_leads: number;
   unassigned_leads: number;
 }
+
+
+export type ObjectionType = 'fees' | 'job_fears' | 'family_approval' | 'time' | 'eligibility' | 'location' | 'trust' | 'other';
+export type TimelineEventType = 'message' | 'stage_change' | 'note' | 'follow_up' | 'booking' | 'handoff';
+export interface LeadObjection {
+  type: ObjectionType;
+  label: string;
+  evidence?: string;
+  detected_at?: ISOTimestamp;
+}
+export interface LeadTimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  title: string;
+  description: string;
+  occurred_at: ISOTimestamp;
+  channel?: string;
+  actor?: string;
+}
+export interface LeadDetail extends Lead {
+  phone?: string;
+  email?: string;
+  course_interest?: string;
+  summary: string[];
+  objections: LeadObjection[];
+  next_action: string;
+  consent: Record<string, boolean>;
+  human_takeover: boolean;
+  assigned_name?: string;
+  timeline: LeadTimelineEvent[];
+}
+export interface CreateLeadNoteInput { text: string; }
+export interface CreateFollowUpInput {
+  lead_id: UUID;
+  channel: string;
+  action_type: string;
+  reason: string;
+  suggested_message?: string;
+  scheduled_at?: ISOTimestamp;
+  priority?: 'low' | 'normal' | 'high';
+}
