@@ -344,3 +344,93 @@ def test_v1_lead_detail_returns_record(monkeypatch):
     )
     assert response.status_code == 200
     assert response.json()["data"]["full_name"] == "Asha Patil"
+
+
+def test_v1_lead_update_rejects_missing_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.patch(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111",
+        json={"stage": "qualified"},
+    )
+    assert response.status_code == 401
+
+
+def test_v1_lead_update_validates_stage_and_empty_patch(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    headers = {"Authorization": "Bearer test-secret"}
+    base = "/api/v1/leads/11111111-1111-4111-8111-111111111111"
+    assert client.patch(base, headers=headers, json={"stage": "unknown"}).status_code == 422
+    assert client.patch(base, headers=headers, json={}).status_code == 422
+
+
+def test_v1_lead_update_returns_updated_record(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "full_name": "Asha Patil",
+                "stage": "qualified",
+                "marketing_consent": False,
+                "whatsapp_consent": False,
+                "email_consent": False,
+                "do_not_contact": False,
+            }
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            assert params["stage"] == "qualified"
+            assert params["lead_id"] == "11111111-1111-4111-8111-111111111111"
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.patch(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"stage": "qualified"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["stage"] == "qualified"
+
+
+def test_v1_lead_update_returns_404_for_missing_record(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return None
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            return FakeResult()
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.patch(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"stage": "contacted"},
+    )
+    assert response.status_code == 404
