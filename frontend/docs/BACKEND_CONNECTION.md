@@ -7,12 +7,14 @@ This guide describes the backend that is currently present in `backend/app/main.
 - `GET /health` — API process health.
 - `GET /health/database` — checks the configured PostgreSQL connection.
 - `GET /api/leads` — reads up to 100 unmerged leads and returns `{ "count": number, "leads": [...] }`.
+- `GET /api/voice/status` — reports whether a voice provider is configured; it does not transcribe or translate audio.
 
 The frontend's Next.js rewrite keeps the backend URL server-side:
 
 - Browser request `/backend-api/leads` → FastAPI `/api/leads`.
 - Browser request `/backend-api/health` → FastAPI `/health`.
 - Browser request `/backend-api/health/database` → FastAPI `/health/database`.
+- Browser request `/backend-api/voice/status` → FastAPI `/api/voice/status`.
 
 FastAPI errors can use the standard `{ "detail": "..." }` shape. The frontend API client now displays that detail instead of hiding it behind a generic HTTP error.
 
@@ -61,3 +63,8 @@ The database health route returns HTTP 503 when the database cannot be reached. 
 ## Validation status
 
 These instructions and route mappings are based on the repository code. A successful local end-to-end run, database connection, and production build must be verified in the developer environment; this commit does not claim those checks passed.
+
+
+## Automated checks
+
+GitHub Actions runs frontend type-checking, linting and a production build, plus backend Python compilation and API smoke tests. The backend tests use a local SQLite URL only to import the app and exercise endpoints that do not need schema data; they do not validate the actual PostgreSQL schema or a Supabase connection. Check the latest run before merging.
