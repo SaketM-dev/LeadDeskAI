@@ -536,3 +536,66 @@ def test_v1_lead_assignment_returns_404_for_missing_staff_user(monkeypatch):
     )
     assert response.status_code == 404
 
+def test_v1_lead_notes_require_auth_and_reject_blank_body(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    url = "/api/v1/leads/11111111-1111-4111-8111-111111111111/notes"
+    assert client.post(url, json={"body": "Internal note"}).status_code == 401
+    response = client.post(
+        url,
+        headers={"Authorization": "Bearer test-secret"},
+        json={"body": "   "},
+    )
+    assert response.status_code == 422
+
+
+def test_v1_lead_notes_create_internal_note_and_audit(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    statements = []
+
+    class FakeResult:
+        def __init__(self, row=None):
+            self.row = row
+        def mappings(self):
+            return self
+        def first(self):
+            return self.row
+        def one(self):
+            return self.row
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            sql = str(statement)
+            statements.append(sql)
+            if "SELECT id FROM public.leads" in sql:
+                return FakeResult({"id": params["lead_id"]})
+            if "INSERT INTO public.lead_notes" in sql:
+                assert params["body"] == "Call back tomorrow"
+                return FakeResult({
+                    "id": "33333333-3333-4333-8333-333333333333",
+                    "lead_id": params["lead_id"],
+                    "author_id": None,
+                    "body": params["body"],
+                })
+            if "INSERT INTO public.audit_events" in sql:
+                return FakeResult()
+            raise AssertionError(f"Unexpected SQL: {sql}")
+
+    class FakeEngine:
+        def begin(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.post(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111/notes",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"body": "  Call back tomorrow  "},
+    )
+    assert response.status_code == 201
+    assert response.json()["data"]["body"] == "Call back tomorrow"
+    assert any("INSERT INTO public.audit_events" in sql for sql in statements)
+
