@@ -25,3 +25,4 @@ dist/
 uploads/
 media/
 .tmp/
+*.tsbuildinfo
