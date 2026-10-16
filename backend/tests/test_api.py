@@ -273,3 +273,74 @@ def test_v1_lead_creation_returns_503_on_database_failure(monkeypatch):
         json={"full_name": "Asha Patil"},
     )
     assert response.status_code == 503
+
+
+def test_v1_lead_detail_requires_valid_uuid(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.get(
+        "/api/v1/leads/not-a-uuid",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 422
+
+
+def test_v1_lead_detail_returns_404_when_missing(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return None
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            assert params["lead_id"] == "11111111-1111-4111-8111-111111111111"
+            return FakeResult()
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 404
+
+
+def test_v1_lead_detail_returns_record(monkeypatch):
+    import app.routers.v1_leads as leads_module
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def first(self):
+            return {"id": "11111111-1111-4111-8111-111111111111", "full_name": "Asha Patil", "stage": "new"}
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+        def execute(self, statement, params):
+            return FakeResult()
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConnection()
+
+    monkeypatch.setattr(leads_module, "engine", FakeEngine())
+    response = client.get(
+        "/api/v1/leads/11111111-1111-4111-8111-111111111111",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json()["data"]["full_name"] == "Asha Patil"
