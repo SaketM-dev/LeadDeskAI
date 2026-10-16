@@ -23,6 +23,37 @@ AI-assisted admissions lead management for education teams. The application is d
 - Jobs and reminders: worker-backed jobs where implemented.
 - External channels, AI and calendar providers: adapter-based; disconnected providers must be labelled as simulated.
 
+## Run the backend
+
+The current FastAPI backend implements health checks, a database connectivity check, the lead-list read endpoint, and a voice-provider status endpoint. The rest of the product API in `docs/API_SPEC.md` is a specification, not a claim that every route exists.
+
+1. Create a local virtual environment and install dependencies:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL connection string. Never commit `.env` or paste database credentials into public issues.
+3. Apply `database/schema.sql` only after checking that the target database is correct and backed up. This SQL creates application tables; do not run it against an unknown production database without review.
+4. Start the API from the repository root:
+
+   ```bash
+   uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
+   ```
+
+5. Verify `http://127.0.0.1:8000/health`, `http://127.0.0.1:8000/health/database`, and `http://127.0.0.1:8000/docs`.
+
+Backend smoke tests:
+
+```bash
+source .venv/bin/activate
+PYTHONPATH=backend DATABASE_URL=sqlite:///./test.db pytest -q backend/tests
+```
+
+The SQLite URL above is for smoke tests only. The production lead query uses PostgreSQL-specific schema qualification and expects `database/schema.sql` to have been applied.
+
 ## Run the frontend
 
 ```bash

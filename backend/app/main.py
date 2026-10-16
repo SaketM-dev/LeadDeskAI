@@ -3,12 +3,16 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
+from app.routers.voice import router as voice_router
 
 app = FastAPI(
     title="AI Lead Desk API",
     description="Backend API for AI-powered admissions and lead management.",
     version="0.1.0",
 )
+
+
+app.include_router(voice_router)
 
 
 @app.get("/")
@@ -64,8 +68,14 @@ def list_leads():
         LIMIT 100
     """)
 
-    with engine.connect() as connection:
-        rows = connection.execute(query).mappings().all()
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(query).mappings().all()
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Lead data is unavailable. Check DATABASE_URL and confirm database/schema.sql has been applied.",
+        )
 
     leads = [dict(row) for row in rows]
 
