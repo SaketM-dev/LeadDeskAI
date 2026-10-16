@@ -1,16 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft, AlertTriangle, CalendarClock, CheckCircle2, Clock3, MessageSquare,
-  ShieldCheck, UserRound, UserRoundCheck, UserRoundCog, ClipboardList, Send,
+  ShieldCheck, UserRound, UserRoundCog, ClipboardList, Send,
   PauseCircle, PlayCircle, Plus, X
 } from 'lucide-react';
 import { DEMO_MODE } from '@/lib/mode';
 import { getDemoLeadDetail } from '@/fixtures/lead-details';
-import type { LeadStage, LeadTimelineEvent } from '@/types/api';
+import { getLeadDetail } from '@/services/leads';
+import type { LeadDetail, LeadStage, LeadTimelineEvent } from '@/types/api';
 
 const stageOptions: { value: LeadStage; label: string }[] = [
   { value: 'new', label: 'New' }, { value: 'contacted', label: 'Contacted' },
@@ -27,7 +28,9 @@ export default function LeadDetailPage() {
   const params = useParams<{ leadId: string }>();
   const leadId = decodeURIComponent(params.leadId);
   const original = useMemo(() => getDemoLeadDetail(leadId), [leadId]);
-  const [lead, setLead] = useState(original);
+  const [lead, setLead] = useState<LeadDetail | undefined>(original);
+  const [loading, setLoading] = useState(!DEMO_MODE);
+  const [loadError, setLoadError] = useState('');
   const [note, setNote] = useState('');
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [followUpText, setFollowUpText] = useState('Confirm approved course details with the admissions team.');
@@ -35,11 +38,42 @@ export default function LeadDetailPage() {
   const [notice, setNotice] = useState('');
   const [events, setEvents] = useState<LeadTimelineEvent[]>(original?.timeline ?? []);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (DEMO_MODE) {
+      const demoLead = getDemoLeadDetail(leadId);
+      setLead(demoLead);
+      setEvents(demoLead?.timeline ?? []);
+      setLoadError('');
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+    setLoading(true);
+    setLoadError('');
+    getLeadDetail(leadId)
+      .then(result => {
+        if (cancelled) return;
+        setLead(result);
+        setEvents(result.timeline ?? []);
+      })
+      .catch(error => {
+        if (cancelled) return;
+        setLead(undefined);
+        setLoadError(error instanceof Error ? error.message : 'Could not load this lead.');
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [leadId]);
+
+  if (loading) {
+    return <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center"><p className="text-sm text-slate-500">Loading lead details…</p></section>;
+  }
+
   if (!lead) {
     return <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center">
       <AlertTriangle className="mx-auto text-amber-500" size={28} />
-      <h1 className="mt-4 text-xl font-bold">Lead not found</h1>
-      <p className="mt-2 text-sm text-slate-500">This ID is not in the local demo fixtures. Live lead details require a verified backend connection.</p>
+      <h1 className="mt-4 text-xl font-bold">{loadError ? 'Could not load lead' : 'Lead not found'}</h1>
+      <p className="mt-2 text-sm text-slate-500">{loadError || 'This ID is not in the local demo fixtures. Live lead details require a verified backend connection.'}</p>
       <Link href="/leads" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600"><ArrowLeft size={16}/> Back to leads</Link>
     </section>;
   }
