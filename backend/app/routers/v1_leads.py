@@ -118,3 +118,34 @@ def create_lead(payload: LeadCreate):
         raise HTTPException(status_code=503, detail="Lead could not be saved. Verify DATABASE_URL and database/schema.sql.")
     return {"data": dict(row)}
 
+
+
+@router.get("/{lead_id}", dependencies=[Depends(require_api_token)])
+def get_lead(lead_id: str):
+    """Return one active lead by UUID without exposing merged duplicate records."""
+    from uuid import UUID
+
+    try:
+        parsed_id = UUID(lead_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="lead_id must be a valid UUID.")
+
+    statement = text("""
+        SELECT id, full_name, preferred_language, stage, lead_score,
+               three_line_summary, first_touch_source, last_touch_source,
+               marketing_consent, whatsapp_consent, email_consent,
+               do_not_contact, assigned_user_id, created_at, updated_at
+        FROM public.leads
+        WHERE id = :lead_id AND merged_into_lead_id IS NULL
+    """)
+    try:
+        with engine.connect() as connection:
+            row = connection.execute(statement, {"lead_id": str(parsed_id)}).mappings().first()
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Lead data is unavailable. Verify DATABASE_URL and database/schema.sql.",
+        )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Lead not found.")
+    return {"data": dict(row)}
