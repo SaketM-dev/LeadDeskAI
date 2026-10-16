@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Activity, ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Download, Filter, GraduationCap, MessageSquare, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users, X } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, CircleHelp, Clock3, Download, Filter, Plus, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react';
 
 type RecordItem = { id: string; name: string; detail: string; stage: string; score: number; channel: string; };
 const leadSeed: RecordItem[] = [

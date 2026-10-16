@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import {
   Activity, BarChart3, BookOpen, CalendarDays, ChevronDown, GraduationCap,
-  LayoutDashboard, ListTodo, LogOut, Menu, MessageSquare, Search, Settings,
+  LayoutDashboard, ListTodo, Menu, MessageSquare, Search, Settings,
   ShieldCheck, Sparkles, Users, X, BrainCircuit
 } from 'lucide-react';
 
