@@ -126,21 +126,46 @@ export async function getLeadDetail(leadId: string): Promise<LeadDetail> {
     throw new ApiRequestError('Lead details are supplied by local demo fixtures while demo mode is enabled.', 0, 'DEMO_MODE');
   }
 
-  // Only the collection endpoint is implemented in the checked backend. Use it
-  // to display an existing record without calling the not-yet-implemented detail
-  // and timeline endpoints.
-  const leads = await listLeads({ limit: 100 });
-  const lead = leads.find(item => item.id === leadId);
-  if (!lead) throw new ApiRequestError('Lead was not found in the backend lead list.', 404, 'LEAD_NOT_FOUND');
+  // Fetch the authoritative record for this profile instead of guessing from
+  // the first 100 items in the lead-list response.
+  const response = await apiFetch<Partial<LeadDetail> & {
+    id: string;
+    full_name: string;
+    stage?: string | null;
+    lead_score?: number | null;
+    source?: string | null;
+    preferred_language?: string | null;
+    summary?: string[] | null;
+    objections?: LeadDetail['objections'] | null;
+    consent?: Record<string, boolean> | null;
+    timeline?: LeadTimelineEvent[] | null;
+  }>(`/leads/${encodeURIComponent(leadId)}`);
+
+  if (!response || response.id !== leadId || !response.full_name) {
+    throw new ApiRequestError('Unexpected response from GET /api/leads/{lead_id}.', 502, 'INVALID_API_RESPONSE');
+  }
 
   return {
-    ...lead,
-    summary: [],
-    objections: [],
-    next_action: 'The backend detail and next-action endpoints are not implemented yet.',
-    consent: {},
-    human_takeover: true,
-    timeline: [] as LeadTimelineEvent[],
+    id: response.id,
+    full_name: response.full_name,
+    preferred_language: response.preferred_language || 'unknown',
+    stage: normalizeStage(response.stage),
+    lead_score: typeof response.lead_score === 'number' ? response.lead_score : 0,
+    assigned_to: response.assigned_to ?? null,
+    assigned_name: response.assigned_name ?? undefined,
+    source: normalizeSource(response.source),
+    created_at: response.created_at ?? undefined,
+    updated_at: response.updated_at ?? undefined,
+    phone: response.phone ?? undefined,
+    email: response.email ?? undefined,
+    course_interest: response.course_interest ?? undefined,
+    summary: Array.isArray(response.summary) ? response.summary : [],
+    objections: Array.isArray(response.objections) ? response.objections : [],
+    next_action: response.next_action || 'Review the recorded lead details and confirm course interest with the learner.',
+    consent: response.consent ?? {},
+    human_takeover: response.human_takeover ?? false,
+    conversation_id: response.conversation_id,
+    timeline: Array.isArray(response.timeline) ? response.timeline : [],
   };
 }
 
