@@ -6,13 +6,17 @@ are supplied as context; the model is instructed not to invent missing facts.
 import json
 import os
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
+from uuid import uuid4
+import logging
 
 from fastapi import APIRouter, HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+from app.routers.inbound_messages import InboundMessage, ingest_inbound_message
 
 router = APIRouter(prefix="/api/chatbot", tags=["chatbot"])
 ROOT = Path(__file__).resolve().parents[3]
@@ -29,6 +33,8 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=20)
+    session_id: Optional[str] = Field(default=None, min_length=8, max_length=200)
+    sender_name: Optional[str] = Field(default=None, max_length=200)
 
 
 def _knowledge_context() -> str:
@@ -96,7 +102,29 @@ APPROVED INSTITUTE KNOWLEDGE:
         answer = result["choices"][0]["message"]["content"]
         if not isinstance(answer, str) or not answer.strip():
             raise ValueError("Empty model response")
-        return {"reply": answer.strip(), "model": body["model"]}
+        # Save the latest prospect message through the shared ingestion pipeline.
+        # The chatbot response remains available if database capture is not configured.
+        capture_status = "not_configured"
+        webhook_token = os.getenv("INBOUND_WEBHOOK_TOKEN", "").strip()
+        latest_user_message = next((item for item in reversed(payload.messages) if item.role == "user"), None)
+        if webhook_token and payload.session_id and latest_user_message:
+            try:
+                capture = ingest_inbound_message(
+                    "website",
+                    InboundMessage(
+                        external_message_id=f"website-{uuid4()}",
+                        sender_id=payload.session_id,
+                        sender_name=payload.sender_name,
+                        thread_id=payload.session_id,
+                        text=latest_user_message.content,
+                    ),
+                    authorization=f"Bearer {webhook_token}",
+                )
+                capture_status = str(capture.get("status", "unknown"))
+            except Exception:
+                logging.getLogger(__name__).exception("Website chatbot lead capture failed")
+                capture_status = "failed"
+        return {"reply": answer.strip(), "model": body["model"], "lead_capture": capture_status}
     except HTTPError as exc:
         # Do not forward provider response bodies, which may contain diagnostic data.
         if exc.code in (401, 403):
