@@ -1199,15 +1199,17 @@ def test_chatbot_status_reports_missing_api_key(monkeypatch):
     assert response.json()["api_key_configured"] is False
 
 
-def test_chatbot_returns_actionable_error_when_key_missing(monkeypatch):
+def test_chatbot_uses_safe_demo_fallback_when_key_missing(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     response = client.post(
         "/api/chatbot/chat",
-        json={"messages": [{"role": "user", "content": "Hello"}]},
+        json={"messages": [{"role": "user", "content": "Hi, I want admission details"}]},
     )
-    assert response.status_code == 503
-    assert "GROQ_API_KEY" in response.json()["detail"]
-
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "demo"
+    assert payload["model"] == "demo-fallback"
+    assert "admissions" in payload["reply"].lower()
 
 
 def test_inbound_webhook_fails_closed_without_configured_token(monkeypatch):
