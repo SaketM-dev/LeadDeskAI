@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { label: 'Overview', href: '/', icon: LayoutDashboard, group: 'WORKSPACE' },
+  { label: 'Overview', href: '/dashboard', icon: LayoutDashboard, group: 'WORKSPACE' },
   { label: 'Leads', href: '/leads', icon: Users, group: 'WORKSPACE' },
   { label: 'AI counselling', href: '/inbox', icon: MessageSquare, group: 'WORKSPACE' },
   { label: 'Aptitude assessment', href: '/aptitude', icon: BrainCircuit, group: 'WORKSPACE' },
