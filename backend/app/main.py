@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
 from app.routers.voice import router as voice_router
+from app.routers.chatbot import router as chatbot_router
 from app.routers.courses import router as courses_router
 from app.routers.v1_leads import router as v1_leads_router
 from app.routers.v1_followups import router as v1_followups_router
@@ -19,6 +20,7 @@ app = FastAPI(
 
 # Core routers
 app.include_router(voice_router)
+app.include_router(chatbot_router)
 app.include_router(courses_router)
 app.include_router(v1_leads_router)
 app.include_router(v1_followups_router)
