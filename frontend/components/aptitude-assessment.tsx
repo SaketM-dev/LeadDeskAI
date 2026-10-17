@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, LoaderCircle, RotateCcw, Sparkles } from 'lucide-react';
 import { DEMO_MODE } from '@/lib/mode';
 
@@ -92,11 +92,7 @@ export default function AptitudeAssessment() {
 
   const current=questions[index];
   const progress=questions.length ? Math.round((Object.keys(selected).length/questions.length)*100) : 0;
-  const authHeaders=useMemo(()=>{
-    if (typeof window==='undefined') return {};
-    const token=window.sessionStorage.getItem('lead-desk-api-token');
-    return token?{Authorization:'Bearer '+token}:{};
-  },[loading]);
+
 
   useEffect(()=>{
     if(DEMO_MODE) return;
@@ -111,7 +107,7 @@ export default function AptitudeAssessment() {
   },[]);
 
   async function request(path:string,init:RequestInit={}) {
-    const response=await fetch('/backend-api/v1/aptitude'+path,{...init,headers:{'Content-Type':'application/json',...authHeaders,...init.headers}});
+    const response=await fetch('/backend-api/v1/aptitude'+path,{...init,headers:{'Content-Type':'application/json',...(typeof window!=='undefined' && sessionStorage.getItem('lead-desk-api-token') ? {Authorization:'Bearer '+sessionStorage.getItem('lead-desk-api-token')} : {}),...init.headers}});
     const body=await response.json().catch(()=>({detail:'Unexpected server response'}));
     if(!response.ok) throw new Error(typeof body.detail==='string'?body.detail:'Assessment request failed.');
     return body;
