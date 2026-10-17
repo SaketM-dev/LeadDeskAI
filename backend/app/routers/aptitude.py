@@ -155,20 +155,24 @@ def complete_assessment(assessment_id: str):
             if assessment["status"] == "completed":
                 row = conn.execute(text("SELECT id,lead_id,status,score,result_summary,recommended_course_ids,recommendation_rationale,completed_at FROM public.aptitude_assessments WHERE id=:id"), {"id": assessment_id}).mappings().one()
                 return {"data": {**dict(row), "recommended_course_ids": _json(row["recommended_course_ids"])}, "notice": "Previously completed result returned."}
-            totals = conn.execute(text("""
-                SELECT q.skill_dimension, sum(r.score_awarded) AS points, count(*) AS answered
-                FROM public.aptitude_responses r JOIN public.aptitude_questions q ON q.id=r.question_id
-                WHERE r.assessment_id=:id GROUP BY q.skill_dimension
+            responses = conn.execute(text("""
+                SELECT r.selected_option_key, r.score_awarded
+                FROM public.aptitude_responses r
+                WHERE r.assessment_id=:id ORDER BY r.response_order
             """), {"id": assessment_id}).mappings().all()
-            total_answered = sum(int(r["answered"]) for r in totals)
+            total_answered = len(responses)
             active_count = int(conn.execute(text("SELECT count(*) FROM public.aptitude_questions WHERE is_active=true")).scalar_one())
             if total_answered < active_count:
                 raise HTTPException(status_code=409, detail=f"Answer all active questions before completing ({total_answered}/{active_count}).")
-            ranked = sorted(totals, key=lambda r: (-float(r["points"] or 0), str(r["skill_dimension"])))
-            # Each selected answer awards one point to its mapped dimension. Rank reflects expressed interests, not ability.
-            dimensions = [{"dimension": str(r["skill_dimension"]), "points": float(r["points"] or 0)} for r in ranked]
-            course_ids = [COURSE_LABELS[d] for d in [x["dimension"] for x in dimensions] if d in COURSE_LABELS][:3]
-            score = round(100 * sum(float(r["points"] or 0) for r in totals) / max(active_count, 1), 2)
+            dimension_points = {}
+            for response in responses:
+                dimension = str(response["selected_option_key"])
+                dimension_points[dimension] = dimension_points.get(dimension, 0.0) + float(response["score_awarded"] or 0)
+            ranked = sorted(dimension_points.items(), key=lambda item: (-item[1], item[0]))
+            # Selected options express interest areas, not objectively measured ability.
+            dimensions = [{"dimension": dimension, "points": points} for dimension, points in ranked]
+            course_ids = [COURSE_LABELS[d] for d, _ in ranked if d in COURSE_LABELS][:3]
+            score = round(100 * sum(float(r["score_awarded"] or 0) for r in responses) / max(active_count, 1), 2)
             top = dimensions[0]["dimension"] if dimensions else "general"
             summary = f"Interest profile leans toward {top.replace('_',' ')}. This reflects the options selected, not aptitude or future performance."
             rationale = "Dimension points: " + ", ".join(f"{x['dimension']}={x['points']:g}" for x in dimensions) + ". Recommendations are discussion starters; confirm goals and prerequisites with a counselor."
