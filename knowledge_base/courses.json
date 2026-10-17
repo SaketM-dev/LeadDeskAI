@@ -2,7 +2,7 @@
   "dataset_name": "AI Lead Desk sample course knowledge base",
   "dataset_version": 1,
   "demo_data_only": true,
-  "warning": "All course names, fees, durations and weekly schedules are fictional hackathon placeholders. Do not use for real prospects until replaced by institute data and approved.",
+  "warning": "All course names, descriptions, topics, fees and durations are illustrative hackathon placeholders. Null values mean details are not provided. Do not use for real prospects until replaced with institute data and approved.",
   "currency": "INR",
   "timezone": "Asia/Kolkata",
   "courses": [
@@ -128,6 +128,52 @@
       "recommendation_fit": [
         "interested_in_deployment",
         "interested_in_cloud_or_automation"
+      ]
+    },
+    {
+      "code": "UX-101",
+      "title": "UI/UX Design Fundamentals",
+      "description": "Illustrative course for learners interested in user research, interface design, prototyping and usability.",
+      "fee_amount": null,
+      "fee_currency": "INR",
+      "fee_basis": "not_provided",
+      "fee_verified": false,
+      "duration_weeks": null,
+      "schedule": {
+        "days": [],
+        "start": null,
+        "end": null,
+        "timezone": "Asia/Kolkata",
+        "is_demo_pattern": true
+      },
+      "eligibility_text": "Not provided; confirm with an authorized counsellor.",
+      "taxes_and_materials": "unspecified",
+      "discount_policy": null,
+      "placement_claim": null,
+      "official_start_date": null,
+      "status": "draft_demo_only",
+      "recommendation_fit": [
+        "interested_in_user_research",
+        "enjoys_visual_problem_solving",
+        "interested_in_digital_products"
+      ],
+      "overview": "Learn to understand user needs and create accessible, intuitive digital experiences.",
+      "topics": [
+        "User research and interview basics",
+        "Personas and journey mapping",
+        "Information architecture and user flows",
+        "Wireframes and interactive prototypes",
+        "Visual hierarchy and design systems",
+        "Usability testing and accessibility"
+      ],
+      "sample_projects": [
+        "Redesign a confusing sign-up flow",
+        "Create and test a clickable mobile-app prototype"
+      ],
+      "possible_roles": [
+        "UI/UX design intern",
+        "Junior product designer",
+        "UX research assistant"
       ]
     }
   ],
