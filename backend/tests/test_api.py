@@ -1199,11 +1199,87 @@ def test_chatbot_status_reports_missing_api_key(monkeypatch):
     assert response.json()["api_key_configured"] is False
 
 
-def test_chatbot_returns_actionable_error_when_key_missing(monkeypatch):
+def test_chatbot_uses_safe_demo_fallback_when_key_missing(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     response = client.post(
         "/api/chatbot/chat",
-        json={"messages": [{"role": "user", "content": "Hello"}]},
+        json={"messages": [{"role": "user", "content": "Hi, I want admission details"}]},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "demo"
+    assert payload["model"] == "demo-fallback"
+    assert "admissions" in payload["reply"].lower()
+
+
+def test_inbound_webhook_fails_closed_without_configured_token(monkeypatch):
+    monkeypatch.delenv("INBOUND_WEBHOOK_TOKEN", raising=False)
+    response = client.post(
+        "/api/webhooks/inbound/website",
+        json={
+            "external_message_id": "test-1",
+            "sender_id": "session-1",
+            "text": "I want to learn data science",
+        },
     )
     assert response.status_code == 503
-    assert "GROQ_API_KEY" in response.json()["detail"]
+    assert "INBOUND_WEBHOOK_TOKEN" in response.json()["detail"]
+
+
+def test_inbound_webhook_rejects_invalid_token(monkeypatch):
+    monkeypatch.setenv("INBOUND_WEBHOOK_TOKEN", "test-secret")
+    response = client.post(
+        "/api/webhooks/inbound/website",
+        headers={"Authorization": "Bearer wrong"},
+        json={
+            "external_message_id": "test-1",
+            "sender_id": "session-1",
+            "text": "I want to learn data science",
+        },
+    )
+    assert response.status_code == 401
+
+
+def test_inbound_webhook_requires_verified_external_channel(monkeypatch):
+    monkeypatch.setenv("INBOUND_WEBHOOK_TOKEN", "test-secret")
+    response = client.post(
+        "/api/webhooks/inbound/whatsapp",
+        headers={"Authorization": "Bearer test-secret"},
+        json={
+            "external_message_id": "test-1",
+            "sender_id": "sender-1",
+            "text": "I want to learn data science",
+        },
+    )
+    assert response.status_code == 400
+    assert "verify provider signatures" in response.json()["detail"]
+
+
+def test_aptitude_assessment_requires_api_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        json={"lead_id": "11111111-1111-4111-8111-111111111111", "language": "en"},
+    )
+    assert response.status_code == 401
+
+
+def test_aptitude_assessment_rejects_invalid_lead_uuid(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"lead_id": "not-a-uuid", "language": "en"},
+    )
+    assert response.status_code == 422
+    assert "valid UUID" in response.json()["detail"]
+
+
+def test_aptitude_assessment_validates_language(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"lead_id": "11111111-1111-4111-8111-111111111111", "language": "fr"},
+    )
+    assert response.status_code == 422

@@ -65,6 +65,7 @@ function normalizeBackendLead(item: ExistingBackendLead): Lead {
     preferred_language: item.preferred_language || 'unknown',
     stage: normalizeStage(item.stage),
     lead_score: typeof item.lead_score === 'number' ? item.lead_score : 0,
+    summary: item.three_line_summary ?? undefined,
     assigned_to: item.assigned_user_id ?? null,
     source: normalizeSource(item.first_touch_source),
     created_at: item.created_at ?? undefined,

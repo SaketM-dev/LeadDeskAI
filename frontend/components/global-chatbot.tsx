@@ -17,6 +17,17 @@ export default function GlobalChatbot() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef<string>('');
+
+  useEffect(() => {
+    const key = 'lead-desk-website-session';
+    let sessionId = window.sessionStorage.getItem(key);
+    if (!sessionId) {
+      sessionId = 'webchat-' + window.crypto.randomUUID();
+      window.sessionStorage.setItem(key, sessionId);
+    }
+    sessionIdRef.current = sessionId;
+  }, []);
 
   useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages, loading, open]);
 
@@ -35,7 +46,7 @@ export default function GlobalChatbot() {
         response = await fetch('/backend-api/chatbot/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: next.filter((m, i) => !(i === 0 && m === welcome)).slice(-16) }),
+          body: JSON.stringify({ messages: next.filter((m, i) => !(i === 0 && m === welcome)).slice(-16), session_id: sessionIdRef.current }),
         });
       } catch {
         throw new Error('Cannot reach the AI backend. Start FastAPI on http://localhost:8000 and check the Next.js proxy.');
