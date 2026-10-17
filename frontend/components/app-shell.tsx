@@ -33,11 +33,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return <div className="min-h-screen bg-[var(--color-page)] text-[var(--color-text)]">
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      <div className="flex h-[76px] items-center gap-3 border-b border-[var(--color-border)] px-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-accent-strong)] text-white"><Sparkles size={21}/></div>
-        <div><div className="font-bold tracking-tight">AI Lead Desk</div><div className="text-[11px] text-[var(--color-muted)]">Admissions workspace</div></div>
+      <Link href="/" aria-label="AI Lead Desk home" className="flex h-[76px] items-center gap-3 border-b border-[var(--color-border)] px-5 transition hover:bg-white/[0.025]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/15 bg-violet-400/10 text-violet-200"><Sparkles size={21}/></div>
+        <div><div className="font-semibold tracking-tight text-white">lead<span className="text-violet-300">desk</span><span className="ml-1 rounded border border-white/10 px-1 py-0.5 text-[9px] font-medium uppercase tracking-widest text-white/40">AI</span></div><div className="text-[11px] text-white/40">Admissions workspace</div></div>
         <button onClick={() => setMobileOpen(false)} className="ml-auto rounded-lg p-1 text-[var(--color-muted)] lg:hidden" aria-label="Close navigation"><X size={19}/></button>
-      </div>
+      </Link>
       <div className="px-3 pt-4"><label className="relative block"><span className="sr-only">Find a section</span><Search size={15} className="absolute left-3 top-2.5 text-[var(--color-subtle)]"/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Find a section" className="ui-input pl-9 text-xs"/></label></div>
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
         {['WORKSPACE','INSIGHTS','ADMINISTRATION'].map(group => {
