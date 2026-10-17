@@ -110,3 +110,25 @@ The default configuration enables demo mode so the frontend can be explored with
 - Never commit secrets or real prospect personal data.
 
 Do not describe the application as production-ready until the missing routes, auth controls, live database connection, provider integrations and end-to-end tests are implemented and verified.
+
+
+## Synthetic chat data and XGBoost lead scoring
+
+The repository includes `data/synthetic_chat_enquiries.csv` with 120 fictional enquiry conversations in English, Hindi, and Marathi. Every row is synthetic and the `converted` field is a simulated label generated from transparent intent patterns; it is not actual student/admissions outcome data.
+
+### Train and evaluate the demo model
+
+Install root dependencies, then run:
+
+```bash
+python scripts/train_lead_scoring.py
+```
+
+This trains an XGBoost binary classifier and writes `artifacts/lead_intent_xgboost.json` plus a metrics report. The API lazily trains an in-memory model from the bundled synthetic CSV if you haven't run the script first.
+
+### API endpoints
+
+- `GET /api/lead-scoring/training-data` — aggregate count of synthetic examples and labels.
+- `POST /api/lead-scoring/score` — request body such as `{"transcript":"I want to book a demo next week","language":"en"}`.
+
+The returned score is an experimental enquiry-priority estimate only. Synthetic-only metrics do not establish real-world accuracy. Do not use it to reject applicants, decide eligibility, or make other high-impact decisions. Replace the synthetic data and validate the model on consented, representative, historical outcomes before any operational use.
