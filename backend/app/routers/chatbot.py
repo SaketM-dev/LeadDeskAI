@@ -122,15 +122,21 @@ APPROVED INSTITUTE KNOWLEDGE:
                 raise ValueError("Empty model response")
             answer = answer.strip()
         except HTTPError as exc:
-            if exc.code in (401, 403):
-                raise HTTPException(status_code=502, detail="The chatbot provider rejected its credentials. Check GROQ_API_KEY.") from exc
-            if exc.code == 429:
-                raise HTTPException(status_code=429, detail="The chatbot has reached the provider's usage limit. Please try again later.") from exc
-            raise HTTPException(status_code=502, detail="The chatbot provider returned an error. Please try again later.") from exc
+            # A missing/invalid key, quota limit, or provider-side failure should not
+            # make the demo widget unusable. Return an explicitly labelled fallback.
+            logging.getLogger(__name__).warning(
+                "Groq chatbot request failed with HTTP status %s; using demo fallback", exc.code
+            )
+            answer = _demo_reply(latest_user_message.content if latest_user_message else "")
+            model = "demo-fallback"
         except (URLError, TimeoutError):
-            raise HTTPException(status_code=502, detail="The chatbot provider is temporarily unreachable.") from None
+            logging.getLogger(__name__).warning("Groq chatbot is unreachable; using demo fallback")
+            answer = _demo_reply(latest_user_message.content if latest_user_message else "")
+            model = "demo-fallback"
         except (KeyError, ValueError, json.JSONDecodeError):
-            raise HTTPException(status_code=502, detail="The chatbot returned an unexpected response.") from None
+            logging.getLogger(__name__).warning("Groq chatbot returned an invalid response; using demo fallback")
+            answer = _demo_reply(latest_user_message.content if latest_user_message else "")
+            model = "demo-fallback"
 
     # Save the latest prospect message through the shared ingestion pipeline.
     capture_status = "not_configured"
