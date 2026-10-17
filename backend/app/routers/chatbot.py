@@ -9,12 +9,16 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 router = APIRouter(prefix="/api/chatbot", tags=["chatbot"])
 ROOT = Path(__file__).resolve().parents[3]
+# Load the repository-root .env directly so chatbot configuration does not depend
+# on which other router happens to be imported first. Existing environment vars win.
+load_dotenv(ROOT / ".env")
 MODEL_DEFAULT = "openai/gpt-oss-20b"
 
 
