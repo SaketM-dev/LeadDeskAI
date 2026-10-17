@@ -1253,3 +1253,33 @@ def test_inbound_webhook_requires_verified_external_channel(monkeypatch):
     )
     assert response.status_code == 400
     assert "verify provider signatures" in response.json()["detail"]
+
+
+def test_aptitude_assessment_requires_api_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        json={"lead_id": "11111111-1111-4111-8111-111111111111", "language": "en"},
+    )
+    assert response.status_code == 401
+
+
+def test_aptitude_assessment_rejects_invalid_lead_uuid(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"lead_id": "not-a-uuid", "language": "en"},
+    )
+    assert response.status_code == 422
+    assert "valid UUID" in response.json()["detail"]
+
+
+def test_aptitude_assessment_validates_language(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.post(
+        "/api/v1/aptitude/assessments",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"lead_id": "11111111-1111-4111-8111-111111111111", "language": "fr"},
+    )
+    assert response.status_code == 422
