@@ -20,7 +20,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   try {
     response = await fetch(`${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`, {
       ...init,
-      headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
+      headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(typeof window !== 'undefined' && window.sessionStorage.getItem('lead-desk-api-token') ? { Authorization: `Bearer ${window.sessionStorage.getItem('lead-desk-api-token')}` } : {}), ...init.headers },
     });
   } catch {
     throw new ApiRequestError('The API could not be reached. Check BACKEND_API_URL and ensure FastAPI is running.', 0, 'NETWORK_ERROR');
