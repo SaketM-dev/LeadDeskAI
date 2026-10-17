@@ -37,7 +37,7 @@ The current FastAPI backend implements health checks, a database connectivity ch
    pip install -r requirements.txt
    ```
 
-2. Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL connection string. Never commit `.env` or paste database credentials into public issues.
+2. Copy `.env.example` to `.env`. Set `GROQ_API_KEY` to a valid Groq key for hosted chatbot inference. Keep all real secrets in `.env` or deployment secrets; never commit them. If `DATABASE_URL` is omitted, the API starts with a local SQLite demo file so health checks and the chatbot can run, but database-backed lead features require your PostgreSQL/Supabase URL and the schema.
 3. Apply `database/schema.sql` only after checking that the target database is correct and backed up. The additive workflow migration must also be reviewed and intentionally applied before its tables can be used. Neither database change has been verified against your live Supabase instance in this task.
 4. Start the API from the repository root:
 
