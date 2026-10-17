@@ -111,14 +111,47 @@ export async function listLeads(filters: LeadFilters = {}): Promise<Lead[]> {
   return applyFilters(response.leads.map(normalizeBackendLead), filters);
 }
 
-export async function createLead(_input: CreateLeadInput): Promise<Lead> {
+export async function createLead(input: CreateLeadInput): Promise<Lead> {
   if (DEMO_MODE) throw new ApiRequestError('Creating a lead through the API is disabled in demo mode. Demo records are local-only.', 0, 'DEMO_MODE');
-  throw unavailable('POST /api/leads');
+
+  // The current backend schema does not persist phone, email, or notes on lead
+  // creation. Reject these explicitly rather than silently discarding user input.
+  if (input.phone?.trim() || input.email?.trim() || input.notes?.trim()) {
+    throw new ApiRequestError(
+      'The live API currently supports name, language, source, and consent only. Phone, email, and notes were not saved.',
+      422,
+      'UNSUPPORTED_LEAD_FIELDS',
+    );
+  }
+
+  const consent = input.consent ?? {};
+  const response = await apiFetch<{ data: ExistingBackendLead }>('/v1/leads', {
+    method: 'POST',
+    body: JSON.stringify({
+      full_name: input.full_name,
+      preferred_language: input.preferred_language || 'unknown',
+      source: input.source,
+      marketing_consent: consent.marketing ?? false,
+      whatsapp_consent: consent.whatsapp ?? false,
+      email_consent: consent.email ?? false,
+    }),
+  });
+  if (!response?.data?.id || !response.data.full_name) {
+    throw new ApiRequestError('Unexpected response from POST /api/v1/leads.', 502, 'INVALID_API_RESPONSE');
+  }
+  return normalizeBackendLead(response.data);
 }
 
-export async function updateLeadStage(_leadId: string, _stage: LeadStage): Promise<Lead> {
+export async function updateLeadStage(leadId: string, stage: LeadStage): Promise<Lead> {
   if (DEMO_MODE) throw new ApiRequestError('Updating a lead through the API is disabled in demo mode.', 0, 'DEMO_MODE');
-  throw unavailable('PATCH /api/leads/{lead_id}');
+  const response = await apiFetch<{ data: ExistingBackendLead }>(`/v1/leads/${encodeURIComponent(leadId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ stage }),
+  });
+  if (!response?.data?.id) {
+    throw new ApiRequestError('Unexpected response from PATCH /api/v1/leads/{lead_id}.', 502, 'INVALID_API_RESPONSE');
+  }
+  return normalizeBackendLead(response.data);
 }
 
 export async function getLeadDetail(leadId: string): Promise<LeadDetail> {
@@ -169,9 +202,12 @@ export async function getLeadDetail(leadId: string): Promise<LeadDetail> {
   };
 }
 
-export async function addLeadNote(_leadId: string, _text: string): Promise<void> {
+export async function addLeadNote(leadId: string, text: string): Promise<void> {
   if (DEMO_MODE) throw new ApiRequestError('Live notes are disabled in demo mode.', 0, 'DEMO_MODE');
-  throw unavailable('POST /api/leads/{lead_id}/notes');
+  await apiFetch<{ data: { id: string } }>(`/v1/leads/${encodeURIComponent(leadId)}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: text }),
+  });
 }
 
 export async function handoffLead(_leadId: string, _reason: 'human_requested' | 'low_confidence' | 'sensitive' | 'other' = 'human_requested'): Promise<void> {

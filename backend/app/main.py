@@ -83,6 +83,44 @@ def database_health():
         )
 
 
+@app.get("/api/dashboard/summary")
+def dashboard_summary():
+    """Return live dashboard counts from the same database used by lead workflows."""
+    try:
+        with engine.connect() as connection:
+            stage_rows = connection.execute(text("""
+                SELECT stage, COUNT(*) AS count
+                FROM public.leads
+                WHERE merged_into_lead_id IS NULL
+                GROUP BY stage
+            """)).mappings().all()
+            totals = connection.execute(text("""
+                SELECT
+                    COUNT(*) AS total_leads,
+                    COUNT(*) FILTER (WHERE assigned_user_id IS NULL) AS unassigned_leads,
+                    COUNT(*) FILTER (WHERE stage = 'new') AS new_leads
+                FROM public.leads
+                WHERE merged_into_lead_id IS NULL
+            """)).mappings().one()
+            overdue = connection.execute(text("""
+                SELECT COUNT(*)
+                FROM public.follow_up_tasks
+                WHERE status = 'pending' AND due_at < now()
+            """)).scalar_one()
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Dashboard data is unavailable. Verify DATABASE_URL and apply the admissions workflow migration.",
+        )
+
+    return {
+        "stage_counts": {str(row["stage"]): int(row["count"]) for row in stage_rows if row["stage"]},
+        "overdue_follow_ups": int(overdue or 0),
+        "new_leads": int(totals["new_leads"] or 0),
+        "unassigned_leads": int(totals["unassigned_leads"] or 0),
+    }
+
+
 @app.get("/api/leads")
 def list_leads():
     query = text("""
