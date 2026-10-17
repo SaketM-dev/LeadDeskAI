@@ -1166,3 +1166,12 @@ def test_knowledge_base_requires_auth_and_validates_content(monkeypatch):
         headers={"Authorization":"Bearer test-secret"},
         json={"kind":"faq","title":"  ","body":"body"})
     assert response.status_code == 422
+
+
+def test_course_catalogue_endpoint_returns_labeled_sample_data():
+    response = client.get("/api/courses")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["demo_data_only"] is True
+    assert payload["courses"]
+    assert any(course.get("title") == "UI/UX Design Fundamentals" for course in payload["courses"])
