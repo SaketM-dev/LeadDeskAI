@@ -88,7 +88,7 @@ export default function AptitudeAssessment() {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
-  const [demoModeActive,setDemoModeActive]=useState(DEMO_MODE);
+  const demoModeActive=DEMO_MODE;
 
   const current=questions[index];
   const progress=questions.length ? Math.round((Object.keys(selected).length/questions.length)*100) : 0;
