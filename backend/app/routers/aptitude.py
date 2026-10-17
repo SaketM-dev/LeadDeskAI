@@ -16,11 +16,12 @@ from app.routers.v1_leads import require_api_token
 router = APIRouter(prefix="/api/v1/aptitude", tags=["aptitude"], dependencies=[Depends(require_api_token)])
 
 COURSE_LABELS = {
-    "data": "Data Science with Python",
-    "software": "Full-Stack Web Development",
-    "ai": "AI & Machine Learning Foundations",
-    "design": "UI/UX Design Fundamentals",
-    "business": "Business and Product Strategy",
+    "realistic": "Applied Technology, Engineering and Technical Operations",
+    "investigative": "Data Science, Research and Analytical Problem Solving",
+    "artistic": "Design, Media and Creative Technology",
+    "social": "Teaching, Counseling and People-Centered Services",
+    "enterprising": "Business, Entrepreneurship and Product Leadership",
+    "conventional": "Operations, Quality Assurance and Information Management",
 }
 
 
