@@ -132,38 +132,3 @@ option { background: var(--color-surface); color: var(--color-text); }
     color: var(--color-muted);
   }
 }
-
-/*
- * Compatibility bridge for existing feature pages. It maps old light palette
- * utilities onto the token system so navigation between existing routes stays
- * dark while those pages are refactored into semantic UI components.
- */
-.bg-white { background-color: var(--color-surface) !important; }
-.bg-slate-50, .bg-slate-100 { background-color: var(--color-raised) !important; }
-.bg-slate-900, .bg-slate-950 { background-color: var(--color-page) !important; }
-.border-slate-50, .border-slate-100, .border-slate-200, .border-slate-300 { border-color: var(--color-border) !important; }
-.divide-slate-100 > :not([hidden]) ~ :not([hidden]), .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border) !important; }
-.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700 { color: var(--color-text) !important; }
-.text-slate-600, .text-slate-500 { color: var(--color-muted) !important; }
-.text-slate-400, .text-slate-300 { color: var(--color-subtle) !important; }
-.hover\:bg-slate-50:hover, .hover\:bg-slate-100:hover, .hover\:bg-slate-50\/70:hover { background-color: var(--color-raised) !important; }
-.bg-indigo-50, .bg-blue-50, .bg-sky-50, .bg-violet-50 { background-color: var(--color-accent-soft) !important; }
-.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-blue-700, .text-sky-600 { color: var(--color-accent) !important; }
-.border-indigo-100, .border-indigo-200, .border-blue-200, .border-sky-200 { border-color: var(--color-border) !important; }
-.bg-indigo-600 { background-color: var(--color-accent-strong) !important; }
-.hover\:bg-indigo-700:hover { background-color: var(--color-accent) !important; }
-.bg-emerald-50, .bg-green-100 { background-color: var(--color-success-soft) !important; }
-.text-emerald-600, .text-emerald-700, .text-green-800 { color: var(--color-success) !important; }
-.border-emerald-200 { border-color: var(--color-success) !important; }
-.bg-amber-50, .bg-yellow-50 { background-color: var(--color-warning-soft) !important; }
-.text-amber-500, .text-amber-600, .text-amber-700, .text-amber-900 { color: var(--color-warning) !important; }
-.border-amber-200 { border-color: var(--color-warning) !important; }
-.bg-rose-50, .bg-red-50 { background-color: var(--color-danger-soft) !important; }
-.text-rose-500, .text-rose-600, .text-rose-700 { color: var(--color-danger) !important; }
-.bg-purple-50 { background-color: var(--color-purple-soft) !important; }
-.text-purple-700, .text-violet-600, .text-violet-700 { color: var(--color-purple) !important; }
-.bg-cyan-50 { background-color: var(--color-info-soft) !important; }
-.text-cyan-700 { color: var(--color-info) !important; }
-.hover\:bg-indigo-50:hover { background-color: var(--color-accent-soft) !important; }
-.bg-white\/95 { background-color: rgb(22 27 34 / 95%) !important; }
-.shadow-sm { box-shadow: var(--shadow-card) !important; }
