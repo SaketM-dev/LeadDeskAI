@@ -1,0 +1,121 @@
+chat_id,language,transcript,converted,source
+SYN-0001,en,"I want to join the Python course. Please share the syllabus and next batch schedule. Can I book a demo class this week? I can start next month. Please send the course outline. I am ready to enroll if the timings fit.",1,website_form
+SYN-0002,hi,"मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है?",1,whatsapp
+SYN-0003,mr,"मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,instagram
+SYN-0004,en,"What is the fee? I need to discuss the budget with my family.",0,phone_call
+SYN-0005,hi,"फीस कितनी है? बजट पर परिवार से बात करनी होगी। अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा।",0,website_form
+SYN-0006,mr,"फी किती आहे? बजेटबद्दल कुटुंबाशी बोलावे लागेल.",0,whatsapp
+SYN-0007,en,"Can I book a demo class this week? I can start next month.",1,instagram
+SYN-0008,hi,"क्या इस हफ्ते डेमो क्लास बुक कर सकता हूँ? अगले महीने शुरू करना है। मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है?",1,phone_call
+SYN-0009,mr,"या आठवड्यात डेमो क्लास बुक करता येईल का? पुढच्या महिन्यात सुरू करायचे आहे. मी नोकरी करतो. वीकेंड बॅच आणि पात्रता सांगा.",1,website_form
+SYN-0010,en,"Just exploring courses; maybe later. Please send general details.",0,whatsapp
+SYN-0011,hi,"अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा।",0,instagram
+SYN-0012,mr,"सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,phone_call
+SYN-0013,en,"I work full time. Are weekend classes available and what are the prerequisites? I have completed the basics and want an advanced course. Can a counselor call me tomorrow?",0,website_form
+SYN-0014,hi,"मैं नौकरी करता हूँ। वीकेंड बैच और योग्यता बताइए।",0,whatsapp
+SYN-0015,mr,"मी नोकरी करतो. वीकेंड बॅच आणि पात्रता सांगा. या आठवड्यात डेमो क्लास बुक करता येईल का? पुढच्या महिन्यात सुरू करायचे आहे.",1,instagram
+SYN-0016,en,"I am comparing two institutes and need placement details before deciding.",0,phone_call
+SYN-0017,hi,"दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए। धन्यवाद, अगले साल वापस संपर्क करूँगा।",0,website_form
+SYN-0018,mr,"दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी.",0,whatsapp
+SYN-0019,en,"I have completed the basics and want an advanced course. Can a counselor call me tomorrow?",0,instagram
+SYN-0020,hi,"बेसिक्स पूरे हैं। एडवांस कोर्स के लिए कल काउंसलर कॉल कर सकता है?",0,phone_call
+SYN-0021,mr,"बेसिक्स झाले आहेत. अॅडव्हान्स कोर्ससाठी उद्या काउन्सेलर फोन करू शकतो का? अभ्यासक्रम पाठवा. वेळ जुळला तर प्रवेश घ्यायला तयार आहे.",1,website_form
+SYN-0022,en,"Thanks, I will check and get back next year. I am comparing two institutes and need placement details before deciding.",0,whatsapp
+SYN-0023,hi,"धन्यवाद, अगले साल वापस संपर्क करूँगा।",0,instagram
+SYN-0024,mr,"धन्यवाद, पुढच्या वर्षी संपर्क करेन.",0,phone_call
+SYN-0025,en,"Please send the course outline. I am ready to enroll if the timings fit. I want to join the Python course. Please share the syllabus and next batch schedule.",1,website_form
+SYN-0026,hi,"सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ।",0,whatsapp
+SYN-0027,mr,"अभ्यासक्रम पाठवा. वेळ जुळला तर प्रवेश घ्यायला तयार आहे.",0,instagram
+SYN-0028,en,"Is there any discount? I cannot decide until I know the total fee.",0,phone_call
+SYN-0029,hi,"कुल फीस और कोई छूट है क्या? उसके बाद फैसला करूँगा। फीस कितनी है? बजट पर परिवार से बात करनी होगी। धन्यवाद, अगले साल वापस संपर्क करूँगा।",0,website_form
+SYN-0030,mr,"एकूण फी आणि सवलत आहे का? मग निर्णय घेईन.",0,whatsapp
+SYN-0031,en,"What is the fee? I need to discuss the budget with my family.",0,instagram
+SYN-0032,hi,"फीस कितनी है? बजट पर परिवार से बात करनी होगी।",0,phone_call
+SYN-0033,mr,"फी किती आहे? बजेटबद्दल कुटुंबाशी बोलावे लागेल. सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,website_form
+SYN-0034,en,"Can I book a demo class this week? I can start next month.",1,whatsapp
+SYN-0035,hi,"क्या इस हफ्ते डेमो क्लास बुक कर सकता हूँ? अगले महीने शुरू करना है।",1,instagram
+SYN-0036,mr,"या आठवड्यात डेमो क्लास बुक करता येईल का? पुढच्या महिन्यात सुरू करायचे आहे. मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,phone_call
+SYN-0037,en,"Just exploring courses; maybe later. Please send general details. I am comparing two institutes and need placement details before deciding.",0,website_form
+SYN-0038,hi,"अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा।",0,whatsapp
+SYN-0039,mr,"सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,instagram
+SYN-0040,en,"I work full time. Are weekend classes available and what are the prerequisites?",0,phone_call
+SYN-0041,hi,"मैं नौकरी करता हूँ। वीकेंड बैच और योग्यता बताइए। बेसिक्स पूरे हैं। एडवांस कोर्स के लिए कल काउंसलर कॉल कर सकता है?",1,website_form
+SYN-0042,mr,"मी नोकरी करतो. वीकेंड बॅच आणि पात्रता सांगा.",0,whatsapp
+SYN-0043,en,"I am comparing two institutes and need placement details before deciding. Just exploring courses; maybe later. Please send general details.",0,instagram
+SYN-0044,hi,"दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए।",0,phone_call
+SYN-0045,mr,"दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी. धन्यवाद, पुढच्या वर्षी संपर्क करेन.",0,website_form
+SYN-0046,en,"I have completed the basics and want an advanced course. Can a counselor call me tomorrow?",1,whatsapp
+SYN-0047,hi,"बेसिक्स पूरे हैं। एडवांस कोर्स के लिए कल काउंसलर कॉल कर सकता है?",0,instagram
+SYN-0048,mr,"बेसिक्स झाले आहेत. अॅडव्हान्स कोर्ससाठी उद्या काउन्सेलर फोन करू शकतो का?",0,phone_call
+SYN-0049,en,"Thanks, I will check and get back next year. Is there any discount? I cannot decide until I know the total fee.",0,website_form
+SYN-0050,hi,"धन्यवाद, अगले साल वापस संपर्क करूँगा। दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए।",0,whatsapp
+SYN-0051,mr,"धन्यवाद, पुढच्या वर्षी संपर्क करेन.",0,instagram
+SYN-0052,en,"Please send the course outline. I am ready to enroll if the timings fit.",1,phone_call
+SYN-0053,hi,"सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ। मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है?",1,website_form
+SYN-0054,mr,"अभ्यासक्रम पाठवा. वेळ जुळला तर प्रवेश घ्यायला तयार आहे.",0,whatsapp
+SYN-0055,en,"Is there any discount? I cannot decide until I know the total fee.",0,instagram
+SYN-0056,hi,"कुल फीस और कोई छूट है क्या? उसके बाद फैसला करूँगा।",0,phone_call
+SYN-0057,mr,"एकूण फी आणि सवलत आहे का? मग निर्णय घेईन. फी किती आहे? बजेटबद्दल कुटुंबाशी बोलावे लागेल. धन्यवाद, पुढच्या वर्षी संपर्क करेन.",0,website_form
+SYN-0058,en,"I want to join the Python course. Please share the syllabus and next batch schedule.",0,whatsapp
+SYN-0059,hi,"मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है?",1,instagram
+SYN-0060,mr,"मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,phone_call
+SYN-0061,en,"Can I book a demo class this week? I can start next month. I work full time. Are weekend classes available and what are the prerequisites?",1,website_form
+SYN-0062,hi,"क्या इस हफ्ते डेमो क्लास बुक कर सकता हूँ? अगले महीने शुरू करना है।",1,whatsapp
+SYN-0063,mr,"या आठवड्यात डेमो क्लास बुक करता येईल का? पुढच्या महिन्यात सुरू करायचे आहे.",1,instagram
+SYN-0064,en,"Just exploring courses; maybe later. Please send general details. What is the fee? I need to discuss the budget with my family.",0,phone_call
+SYN-0065,hi,"अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा। दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए।",0,website_form
+SYN-0066,mr,"सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,whatsapp
+SYN-0067,en,"I work full time. Are weekend classes available and what are the prerequisites?",0,instagram
+SYN-0068,hi,"मैं नौकरी करता हूँ। वीकेंड बैच और योग्यता बताइए।",0,phone_call
+SYN-0069,mr,"मी नोकरी करतो. वीकेंड बॅच आणि पात्रता सांगा. बेसिक्स झाले आहेत. अॅडव्हान्स कोर्ससाठी उद्या काउन्सेलर फोन करू शकतो का?",0,website_form
+SYN-0070,en,"I am comparing two institutes and need placement details before deciding.",0,whatsapp
+SYN-0071,hi,"दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए। अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा।",0,instagram
+SYN-0072,mr,"दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी.",0,phone_call
+SYN-0073,en,"I have completed the basics and want an advanced course. Can a counselor call me tomorrow? Please send the course outline. I am ready to enroll if the timings fit.",1,website_form
+SYN-0074,hi,"बेसिक्स पूरे हैं। एडवांस कोर्स के लिए कल काउंसलर कॉल कर सकता है?",0,whatsapp
+SYN-0075,mr,"बेसिक्स झाले आहेत. अॅडव्हान्स कोर्ससाठी उद्या काउन्सेलर फोन करू शकतो का?",0,instagram
+SYN-0076,en,"Thanks, I will check and get back next year.",0,phone_call
+SYN-0077,hi,"धन्यवाद, अगले साल वापस संपर्क करूँगा। कुल फीस और कोई छूट है क्या? उसके बाद फैसला करूँगा।",0,website_form
+SYN-0078,mr,"धन्यवाद, पुढच्या वर्षी संपर्क करेन. दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी.",0,whatsapp
+SYN-0079,en,"Please send the course outline. I am ready to enroll if the timings fit.",1,instagram
+SYN-0080,hi,"सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ।",0,phone_call
+SYN-0081,mr,"अभ्यासक्रम पाठवा. वेळ जुळला तर प्रवेश घ्यायला तयार आहे. मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,website_form
+SYN-0082,en,"Is there any discount? I cannot decide until I know the total fee.",0,whatsapp
+SYN-0083,hi,"कुल फीस और कोई छूट है क्या? उसके बाद फैसला करूँगा।",0,instagram
+SYN-0084,mr,"एकूण फी आणि सवलत आहे का? मग निर्णय घेईन.",0,phone_call
+SYN-0085,en,"I want to join the Python course. Please share the syllabus and next batch schedule. Can I book a demo class this week? I can start next month. Please send the course outline. I am ready to enroll if the timings fit.",1,website_form
+SYN-0086,hi,"मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है?",1,whatsapp
+SYN-0087,mr,"मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,instagram
+SYN-0088,en,"What is the fee? I need to discuss the budget with my family.",0,phone_call
+SYN-0089,hi,"फीस कितनी है? बजट पर परिवार से बात करनी होगी। अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा।",0,website_form
+SYN-0090,mr,"फी किती आहे? बजेटबद्दल कुटुंबाशी बोलावे लागेल.",0,whatsapp
+SYN-0091,en,"Just exploring courses; maybe later. Please send general details.",0,instagram
+SYN-0092,hi,"अभी सिर्फ जानकारी ले रहा हूँ, बाद में सोचूँगा। फीस कितनी है? बजट पर परिवार से बात करनी होगी।",0,phone_call
+SYN-0093,mr,"सध्या फक्त माहिती घेत आहे, नंतर ठरवेन. दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी.",0,website_form
+SYN-0094,en,"I work full time. Are weekend classes available and what are the prerequisites?",0,whatsapp
+SYN-0095,hi,"मैं नौकरी करता हूँ। वीकेंड बैच और योग्यता बताइए।",0,instagram
+SYN-0096,mr,"मी नोकरी करतो. वीकेंड बॅच आणि पात्रता सांगा.",0,phone_call
+SYN-0097,en,"I am comparing two institutes and need placement details before deciding. Thanks, I will check and get back next year.",0,website_form
+SYN-0098,hi,"दूसरे संस्थान से तुलना कर रहा हूँ, प्लेसमेंट की जानकारी चाहिए।",0,whatsapp
+SYN-0099,mr,"दुसऱ्या संस्थेशी तुलना करत आहे, प्लेसमेंटची माहिती हवी. सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,instagram
+SYN-0100,en,"I have completed the basics and want an advanced course. Can a counselor call me tomorrow?",0,phone_call
+SYN-0101,hi,"बेसिक्स पूरे हैं। एडवांस कोर्स के लिए कल काउंसलर कॉल कर सकता है? सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ।",1,website_form
+SYN-0102,mr,"बेसिक्स झाले आहेत. अॅडव्हान्स कोर्ससाठी उद्या काउन्सेलर फोन करू शकतो का?",0,whatsapp
+SYN-0103,en,"Thanks, I will check and get back next year.",0,instagram
+SYN-0104,hi,"धन्यवाद, अगले साल वापस संपर्क करूँगा।",0,phone_call
+SYN-0105,mr,"धन्यवाद, पुढच्या वर्षी संपर्क करेन. एकूण फी आणि सवलत आहे का? मग निर्णय घेईन.",0,website_form
+SYN-0106,en,"Please send the course outline. I am ready to enroll if the timings fit. I have completed the basics and want an advanced course. Can a counselor call me tomorrow?",1,whatsapp
+SYN-0107,hi,"सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ।",0,instagram
+SYN-0108,mr,"अभ्यासक्रम पाठवा. वेळ जुळला तर प्रवेश घ्यायला तयार आहे.",0,phone_call
+SYN-0109,en,"Is there any discount? I cannot decide until I know the total fee. What is the fee? I need to discuss the budget with my family.",0,website_form
+SYN-0110,hi,"कुल फीस और कोई छूट है क्या? उसके बाद फैसला करूँगा।",0,whatsapp
+SYN-0111,mr,"एकूण फी आणि सवलत आहे का? मग निर्णय घेईन.",0,instagram
+SYN-0112,en,"I want to join the Python course. Please share the syllabus and next batch schedule.",0,phone_call
+SYN-0113,hi,"मुझे Python कोर्स में दाखिला लेना है। सिलेबस और अगला बैच कब है? क्या इस हफ्ते डेमो क्लास बुक कर सकता हूँ? अगले महीने शुरू करना है। सिलेबस भेजिए। समय सही हुआ तो दाखिला लेने के लिए तैयार हूँ।",1,website_form
+SYN-0114,mr,"मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,whatsapp
+SYN-0115,en,"What is the fee? I need to discuss the budget with my family.",0,instagram
+SYN-0116,hi,"फीस कितनी है? बजट पर परिवार से बात करनी होगी।",0,phone_call
+SYN-0117,mr,"फी किती आहे? बजेटबद्दल कुटुंबाशी बोलावे लागेल. सध्या फक्त माहिती घेत आहे, नंतर ठरवेन.",0,website_form
+SYN-0118,en,"Can I book a demo class this week? I can start next month.",1,whatsapp
+SYN-0119,hi,"क्या इस हफ्ते डेमो क्लास बुक कर सकता हूँ? अगले महीने शुरू करना है।",1,instagram
+SYN-0120,mr,"या आठवड्यात डेमो क्लास बुक करता येईल का? पुढच्या महिन्यात सुरू करायचे आहे. मला Python कोर्समध्ये प्रवेश घ्यायचा आहे. अभ्यासक्रम आणि पुढची बॅच कधी आहे?",1,phone_call
