@@ -1175,3 +1175,35 @@ def test_course_catalogue_endpoint_returns_labeled_sample_data():
     assert payload["demo_data_only"] is True
     assert payload["courses"]
     assert any(course.get("title") == "UI/UX Design Fundamentals" for course in payload["courses"])
+
+
+def test_chatbot_status_does_not_expose_api_key(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-secret")
+    monkeypatch.setenv("GROQ_MODEL", "test-model")
+    response = client.get("/api/chatbot/status")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "configured",
+        "provider": "groq",
+        "model": "test-model",
+        "api_key_configured": True,
+    }
+    assert "test-secret" not in response.text
+
+
+def test_chatbot_status_reports_missing_api_key(monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    response = client.get("/api/chatbot/status")
+    assert response.status_code == 200
+    assert response.json()["status"] == "not_configured"
+    assert response.json()["api_key_configured"] is False
+
+
+def test_chatbot_returns_actionable_error_when_key_missing(monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    response = client.post(
+        "/api/chatbot/chat",
+        json={"messages": [{"role": "user", "content": "Hello"}]},
+    )
+    assert response.status_code == 503
+    assert "GROQ_API_KEY" in response.json()["detail"]
