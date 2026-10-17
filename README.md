@@ -56,6 +56,23 @@ PYTHONPATH=backend DATABASE_URL=sqlite:///./test.db pytest -q backend/tests
 
 The SQLite URL above is for smoke tests only. The production lead query uses PostgreSQL-specific schema qualification and expects the schema to be applied.
 
+## Configure the Groq chatbot
+
+The floating multilingual chatbot uses Groq-hosted `openai/gpt-oss-20b` inference. The API key is a private runtime secret and **must not be committed to GitHub**.
+
+1. In the repository root, create your private local environment file by copying `.env.example` to `.env`.
+2. Add these values to `.env` (replace the placeholder with a newly created key from https://console.groq.com/keys):
+
+   ```dotenv
+   GROQ_API_KEY=your_new_groq_api_key
+   GROQ_MODEL=openai/gpt-oss-20b
+   ```
+
+3. Restart the FastAPI process after editing `.env`. The backend loads this file itself; do not put the key in frontend variables, source code, or a committed file.
+4. Send a test request in English, Hindi, or Marathi through the floating chat widget. A valid key and available provider quota are required for a real response.
+
+If the key was exposed in chat, screenshots, or Git history, revoke it and create a replacement. The repository's `.gitignore` excludes `.env` files.
+
 ## Run the frontend
 
 ```bash
