@@ -206,7 +206,7 @@ export default function AptitudeAssessment() {
 
     {assessment&&!result&&current&&<div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
       <section className={panel+' p-5'}>
-        <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-[var(--color-muted)]">Question {index+1} of {questions.length||8}</span><span className="text-xs text-[var(--color-subtle)]">{Math.round((selectedCount/8)*100)}% answered</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-[var(--color-muted)]">Question {index+1} of 8</span><span className="text-xs text-[var(--color-subtle)]">{Math.round((selectedCount/8)*100)}% answered</span></div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-raised)]"><div className="h-full rounded-full bg-[var(--color-accent-strong)] transition-all" style={{width:(selectedCount/8*100)+'%'}}/></div>
         <h3 className="mt-6 text-lg font-bold leading-7">{displayQuestion}</h3>
         <p className="mt-2 text-xs text-[var(--color-muted)]">{language==='hi'?'वह विकल्प चुनें जो आपकी रुचि को सबसे अच्छी तरह दर्शाता है।':language==='mr'?'तुमची आवड सर्वात चांगल्या प्रकारे दर्शवणारा पर्याय निवडा.':'Choose the option that best reflects the learner’s interests. There are no right or wrong answers.'}</p>
