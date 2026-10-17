@@ -30,14 +30,32 @@ export default function GlobalChatbot() {
     setError('');
     setLoading(true);
     try {
-      const response = await fetch('/backend-api/chatbot/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next.filter((m, i) => !(i === 0 && m === welcome)).slice(-16) }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.detail || 'The chatbot could not respond. Please try again.');
-      setMessages(current => [...current, { role: 'assistant', content: String(data.reply) }]);
+      let response: Response;
+      try {
+        response = await fetch('/backend-api/chatbot/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: next.filter((m, i) => !(i === 0 && m === welcome)).slice(-16) }),
+        });
+      } catch {
+        throw new Error('Cannot reach the AI backend. Start FastAPI on http://localhost:8000 and check the Next.js proxy.');
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const data: { reply?: unknown; detail?: unknown; error?: { message?: string } } =
+        contentType.includes('application/json')
+          ? await response.json()
+          : { detail: await response.text() };
+      if (!response.ok) {
+        const detail = typeof data.detail === 'string'
+          ? data.detail
+          : data.error?.message || 'The chatbot could not respond. Please try again.';
+        throw new Error(detail);
+      }
+      if (typeof data.reply !== 'string' || !data.reply.trim()) {
+        throw new Error('The AI backend responded without a reply. Check the backend logs.');
+      }
+      setMessages(current => [...current, { role: 'assistant', content: data.reply as string }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection error. Please try again.');
     } finally {

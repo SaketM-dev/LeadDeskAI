@@ -45,6 +45,17 @@ def _knowledge_context() -> str:
     return "\n".join(parts) or "No approved institute knowledge is currently configured."
 
 
+@router.get("/status")
+def chatbot_status():
+    """Report chatbot configuration without exposing credentials."""
+    return {
+        "status": "configured" if os.getenv("GROQ_API_KEY", "").strip() else "not_configured",
+        "provider": "groq",
+        "model": os.getenv("GROQ_MODEL", MODEL_DEFAULT),
+        "api_key_configured": bool(os.getenv("GROQ_API_KEY", "").strip()),
+    }
+
+
 @router.post("/chat")
 def chat(payload: ChatRequest):
     api_key = os.getenv("GROQ_API_KEY", "").strip()
