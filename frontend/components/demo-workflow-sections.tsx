@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, BookOpen, CheckCircle2, Clock3, Plus, Search, Sparkles, X } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, Plus, Search, Sparkles } from 'lucide-react';
 
 type Lead = { id: string; name: string; interest: string; source: string };
 type Course = { id: string; title: string; category: string; description: string; topics: string[]; interests: string[]; fee: string; duration: string };
