@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DATASET = ROOT / "data" / "synthetic_chat_enquiries.csv"
 FEATURE_NAMES = [
     "has_message", "asks_fee", "asks_schedule", "asks_syllabus", "asks_demo",
