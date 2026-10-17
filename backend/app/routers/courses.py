@@ -115,6 +115,61 @@ def _rank_course_payloads(courses: list[dict[str, Any]], learner_text: str) -> l
     return ranked[:5]
 
 
+
+@router.get("/courses")
+def list_demo_courses():
+    """Return clearly labeled sample courses for the illustrative workspace."""
+    return {
+        "demo_data_only": True,
+        "courses": [
+            {
+                "id": "demo-data-science",
+                "code": "DEMO-DATA-101",
+                "title": "Data Science with Python",
+                "category": "Analytics",
+                "description": "Illustrative introduction to data analysis, Python and visualisation.",
+                "fee_amount": None,
+                "fee_verified": False,
+                "duration_weeks": None,
+                "status": "demo",
+            },
+            {
+                "id": "demo-full-stack",
+                "code": "DEMO-WEB-101",
+                "title": "Full-Stack Web Development",
+                "category": "Software",
+                "description": "Illustrative introduction to responsive interfaces, APIs and databases.",
+                "fee_amount": None,
+                "fee_verified": False,
+                "duration_weeks": None,
+                "status": "demo",
+            },
+            {
+                "id": "demo-ai",
+                "code": "DEMO-AI-101",
+                "title": "AI & Machine Learning Foundations",
+                "category": "Artificial Intelligence",
+                "description": "Illustrative introduction to AI concepts and model evaluation.",
+                "fee_amount": None,
+                "fee_verified": False,
+                "duration_weeks": None,
+                "status": "demo",
+            },
+            {
+                "id": "demo-ux",
+                "code": "DEMO-UX-101",
+                "title": "UI/UX Design Fundamentals",
+                "category": "Design",
+                "description": "Illustrative introduction to user research, wireframes and usability.",
+                "fee_amount": None,
+                "fee_verified": False,
+                "duration_weeks": None,
+                "status": "demo",
+            },
+        ],
+    }
+
+
 @router.get("/approved-courses")
 def list_approved_courses():
     """List approved courses only; draft/demo-only records are never exposed."""
