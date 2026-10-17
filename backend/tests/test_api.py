@@ -1283,3 +1283,19 @@ def test_aptitude_assessment_validates_language(monkeypatch):
         json={"lead_id": "11111111-1111-4111-8111-111111111111", "language": "fr"},
     )
     assert response.status_code == 422
+
+def test_v1_followups_fails_closed_when_auth_is_not_configured(monkeypatch):
+    monkeypatch.delenv("LEAD_DESK_API_TOKEN", raising=False)
+    response = client.get("/api/v1/follow-ups")
+    assert response.status_code == 503
+    assert "authentication" in response.json()["detail"].lower()
+
+
+def test_v1_followups_rejects_missing_or_invalid_bearer_token(monkeypatch):
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    assert client.get("/api/v1/follow-ups").status_code == 401
+    assert client.get(
+        "/api/v1/follow-ups",
+        headers={"Authorization": "Bearer wrong"},
+    ).status_code == 401
+
