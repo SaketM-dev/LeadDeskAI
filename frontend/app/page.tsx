@@ -52,7 +52,7 @@ export default function HomePage() {
       <p className="mt-6 max-w-xl text-sm leading-7 text-white/55 sm:text-base">Less busywork. Better follow-through. One AI-powered admissions workspace that helps your team turn every enquiry into a clearer next step.</p>
       <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link href="/dashboard" className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-3 text-xs font-semibold text-[#101018] transition hover:bg-violet-100">Explore the workspace <ArrowRight size={14} className="transition group-hover:translate-x-0.5"/></Link>
-        <a href="#features" className="inline-flex min-h-11 items-center gap-2 px-4 py-3 text-xs font-medium text-white/65 transition hover:text-white">Discover the platform <ArrowDownRight size={14}/></a>
+        <a href="#features" className="inline-flex min-h-11 items-center gap-2 px-4 py-3 text-xs font-medium text-white/65 transition hover:text-white">Discover the platform <ArrowRight size={14}/></a>
       </div>
 
       <div className="relative mt-16 w-full max-w-[850px] sm:mt-20">
