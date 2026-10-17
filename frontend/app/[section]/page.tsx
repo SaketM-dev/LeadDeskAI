@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, CircleHelp, Clock3, Download, Filter, GraduationCap, Plus, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { DEMO_MODE } from '@/lib/mode';
 import { listLeads } from '@/services/leads';
 import AptitudeAssessment from '@/components/aptitude-assessment';
-import DemoWorkflowSections from '@/components/demo-workflow-sections';
+const DemoWorkflowSections = dynamic(() => import('@/components/demo-workflow-sections'), {
+  ssr: false,
+  loading: () => <div role="status" className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm text-[var(--color-muted)]">Loading workflow records…</div>,
+});
 import { completeFollowUp, createFollowUp, listFollowUps, updateFollowUp, type FollowUpTask } from '@/services/follow-ups';
 
 type RecordItem = { id: string; name: string; detail: string; stage: string; score: number; channel: string; };
