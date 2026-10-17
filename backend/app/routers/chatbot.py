@@ -62,7 +62,6 @@ def chatbot_status():
     }
 
 
-@router.post("/chat")
 def _demo_reply(user_text: str) -> str:
     """Honest local fallback so the widget remains usable without a hosted AI key."""
     text = user_text.casefold()
@@ -79,6 +78,7 @@ def _demo_reply(user_text: str) -> str:
             "so I cannot confirm institute-specific details yet. Please share your name and course interest for an admissions follow-up.")
 
 
+@router.post("/chat")
 def chat(payload: ChatRequest):
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     latest_user_message = next((item for item in reversed(payload.messages) if item.role == "user"), None)
