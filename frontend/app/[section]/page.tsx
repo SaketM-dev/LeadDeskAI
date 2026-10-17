@@ -83,7 +83,7 @@ export default function FeaturePage() {
         setLeads(records.map(record => ({
           id: record.id,
           name: record.full_name,
-          detail: 'Course interest not provided by the current backend',
+          detail: record.summary || 'New enquiry received; review the conversation for details',
           stage: stageLabels[record.stage] || 'New',
           score: record.lead_score,
           channel: (record.source || 'other').replaceAll('_', ' '),

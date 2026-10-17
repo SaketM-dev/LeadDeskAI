@@ -12,6 +12,7 @@ export interface Lead {
   source: LeadSource;
   stage: LeadStage;
   lead_score: number;
+  summary?: string;
   assigned_to?: UUID | null;
   created_at?: ISOTimestamp;
   updated_at?: ISOTimestamp;
