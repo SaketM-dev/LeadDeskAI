@@ -51,7 +51,7 @@ export interface LeadTimelineEvent {
   channel?: string;
   actor?: string;
 }
-export interface LeadDetail extends Lead {
+export interface LeadDetail extends Omit<Lead, 'summary'> {
   conversation_id?: UUID;
   phone?: string;
   email?: string;
