@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, AudioWaveform, Bot, BrainCircuit,
+  ArrowRight, ArrowUpRight, AudioWaveform, Bot, BrainCircuit,
   CalendarCheck, Check, ChevronDown, CircleCheck, GraduationCap, Layers3,
   MessageSquareText, MousePointer2, ShieldCheck, Sparkles, Workflow, Zap
 } from 'lucide-react';
@@ -22,8 +22,8 @@ const workflow = [
 ];
 
 export default function HomePage() {
-  return <main className="min-h-screen overflow-hidden bg-[#080a11] text-white selection:bg-violet-400/30">
-    <div className="pointer-events-none fixed inset-0 -z-0 opacity-70"><div className="landing-grid absolute inset-0"/><div className="absolute inset-x-0 top-0 h-[700px] bg-[radial-gradient(ellipse_at_top,rgba(46,48,110,0.2),transparent_65%)]"/></div>
+  return <main className="relative isolate min-h-screen overflow-hidden bg-[#080a11] text-white selection:bg-violet-400/30">
+    <div className="pointer-events-none fixed inset-0 -z-10 opacity-70"><div className="landing-grid absolute inset-0"/><div className="absolute inset-x-0 top-0 h-[700px] bg-[radial-gradient(ellipse_at_top,rgba(46,48,110,0.2),transparent_65%)]"/></div>
     <header className="relative z-20 mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-5 sm:px-8">
       <Link href="/" aria-label="AI Lead Desk home" className="flex items-center gap-2.5">
         <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]"><Sparkles size={16} className="text-violet-200"/></span>
