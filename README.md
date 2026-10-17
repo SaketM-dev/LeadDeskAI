@@ -132,3 +132,10 @@ This trains an XGBoost binary classifier and writes `artifacts/lead_intent_xgboo
 - `POST /api/lead-scoring/score` — request body such as `{"transcript":"I want to book a demo next week","language":"en"}`.
 
 The returned score is an experimental enquiry-priority estimate only. Synthetic-only metrics do not establish real-world accuracy. Do not use it to reject applicants, decide eligibility, or make other high-impact decisions. Replace the synthetic data and validate the model on consented, representative, historical outcomes before any operational use.
+
+
+## Follow-up UI/backend integration
+
+The Follow-ups workspace can read and mutate real task records when live mode is enabled. The frontend calls the existing token-protected `/api/v1/follow-ups` endpoints for list, create, reschedule, and completion. In demo mode, seeded tasks are explicitly local-only and are never represented as saved backend records.
+
+To use live follow-ups, configure `DATABASE_URL`, `LEAD_DESK_API_TOKEN`, and apply the admissions workflow schema/migration to the database. Set `NEXT_PUBLIC_DEMO_MODE=false` in `frontend/.env.local` and restart Next.js. The API token must be supplied through the authenticated workspace setup; never commit it or expose it in a `NEXT_PUBLIC_*` variable. The database must contain a real lead before a follow-up can be created. Calendar bookings and outbound reminders remain separate integrations and are not implied by a saved follow-up.
