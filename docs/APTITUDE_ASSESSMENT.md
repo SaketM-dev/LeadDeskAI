@@ -2,15 +2,15 @@
 
 ## What is implemented
 
-The workspace **Aptitude assessment** section now provides an eight-question interest-led questionnaire in English, Hindi, and Marathi. A counselor selects an existing lead, optionally records the learner's goal, and starts the assessment. In live mode, the API saves each response, prevents duplicate answers, finalizes a result, and stores ranked interest areas and course discussion recommendations in PostgreSQL.
+The workspace **Aptitude assessment** section now provides a structured 30-item career-interest inventory. It uses six interest areas inspired by the RIASEC framework: Realistic, Investigative, Artistic, Social, Enterprising, and Conventional. The live question bank is seeded by `database/migrations/20261017_career_counseling_30_questions.sql`; the demo mode includes the same 30-item flow. A counselor selects an existing lead, optionally records the learner's goal, and starts the assessment. In live mode, the API saves each response, prevents duplicate answers, finalizes a result, and stores ranked interest areas across six RIASEC-inspired dimensions and course discussion recommendations in PostgreSQL.
 
-This is a preference exploration tool, not a validated psychometric instrument, an objective ability score, or an admission/eligibility decision. The completion percentage measures answered questions; recommendations are conversation starters. No messages are sent automatically.
+**Standardization note:** this is a structured career-interest inventory inspired by RIASEC, not a licensed, normed, or psychometrically validated standardized test. It must not be presented as one or used for admission/eligibility decisions. It is a preference exploration tool; the completion percentage measures answered questions, not ability. Recommendations are discussion starters for a trained counselor. The completion percentage measures answered questions; recommendations are conversation starters. No messages are sent automatically.
 
 ## Database setup
 
 1. Back up and verify the target Supabase/PostgreSQL project.
 2. Apply `database/schema.sql` if the base aptitude tables are not already present. Review it first; do not blindly rerun a schema against a production database.
-3. Apply `database/migrations/20261017_aptitude_assessment.sql` in the Supabase SQL editor or your normal migration workflow. It adds an `updated_at` column and seeds eight versioned questions using `ON CONFLICT DO NOTHING`. It does not delete assessment data.
+3. Apply `database/migrations/20261017_aptitude_assessment.sql` in the Supabase SQL editor or your normal migration workflow. It adds an `updated_at` column and seeds the original eight versioned questions using `ON CONFLICT DO NOTHING`. Then apply `database/migrations/20261017_career_counseling_30_questions.sql`: it deactivates the original eight questions and seeds 30 active career-interest questions. It does not delete assessment data. Apply migrations in order.
 4. Verify the migration completed and that `public.aptitude_questions` has active questions.
 
 The migration has been committed but has **not** been applied to your live Supabase project by this change.
