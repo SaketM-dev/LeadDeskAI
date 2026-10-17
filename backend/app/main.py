@@ -1,12 +1,10 @@
-import json
-from pathlib import Path
-
 from fastapi import APIRouter, FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
 from app.routers.voice import router as voice_router
+from app.routers.courses import router as courses_router
 from app.routers.v1_leads import router as v1_leads_router
 from app.routers.v1_followups import router as v1_followups_router
 from app.routers.v1_demo_bookings import router as v1_demo_bookings_router
@@ -19,7 +17,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Core routers
 app.include_router(voice_router)
+app.include_router(courses_router)
 app.include_router(v1_leads_router)
 app.include_router(v1_followups_router)
 app.include_router(v1_demo_bookings_router)
@@ -38,30 +38,6 @@ def api_v1_health():
 
 app.include_router(v1_health_router)
 
-
-
-@app.get("/api/courses", tags=["courses"])
-def list_demo_courses():
-    """Return the clearly-labelled sample course catalogue used by the demo UI.
-
-    These records are illustrative only. Fees, schedules, eligibility and outcomes
-    must be approved by the institution before use with real prospective students.
-    """
-    catalog_path = Path(__file__).resolve().parents[2] / "knowledge_base" / "courses.json"
-    try:
-        with catalog_path.open("r", encoding="utf-8") as catalog_file:
-            catalog = json.load(catalog_file)
-    except (OSError, json.JSONDecodeError) as exc:
-        raise HTTPException(status_code=503, detail="Sample course catalogue is unavailable.") from exc
-    return {
-        "dataset_name": catalog.get("dataset_name", "AI Lead Desk sample course knowledge base"),
-        "dataset_version": catalog.get("dataset_version", 1),
-        "demo_data_only": True,
-        "warning": catalog.get("warning", "Illustrative sample data; verify all details before use."),
-        "currency": catalog.get("currency", "INR"),
-        "timezone": catalog.get("timezone", "Asia/Kolkata"),
-        "courses": catalog.get("courses", []),
-    }
 
 @app.get("/")
 def home():
