@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db import engine
 from app.auth import require_staff_user
 
-router = APIRouter(prefix="/api", tags=["courses"], dependencies=[Depends(require_staff_user)])
+router = APIRouter(prefix="/api", tags=["courses"])
 
 # Live approved-course endpoints use distinct paths to preserve the existing
 # illustrative GET /api/courses response contract.
@@ -171,7 +171,7 @@ def list_demo_courses():
     }
 
 
-@router.get("/approved-courses")
+@router.get("/approved-courses", dependencies=[Depends(require_staff_user)])
 def list_approved_courses():
     """List approved courses only; draft/demo-only records are never exposed."""
     try:
@@ -189,7 +189,7 @@ def list_approved_courses():
     return {"count": len(courses), "courses": courses}
 
 
-@router.get("/approved-courses/{course_id}")
+@router.get("/approved-courses/{course_id}", dependencies=[Depends(require_staff_user)])
 def get_approved_course(course_id: UUID):
     """Return a course only when it is approved and prospect-visible."""
     try:
@@ -209,7 +209,7 @@ def get_approved_course(course_id: UUID):
     return _course_payload(row)
 
 
-@router.get("/leads/{lead_id}/recommendations")
+@router.get("/leads/{lead_id}/recommendations", dependencies=[Depends(require_staff_user)])
 def get_lead_course_recommendations(lead_id: UUID):
     """Recommend approved courses from a lead summary and latest completed assessment."""
     try:

@@ -74,7 +74,7 @@ def readiness():
         )
 
 
-@app.get("/health/database", dependencies=[Depends(require_staff_user)])
+@app.get("/health/database")
 def database_health():
     try:
         with engine.connect() as connection:
