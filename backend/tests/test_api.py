@@ -9,9 +9,7 @@ from app.auth import require_staff_user
 
 def test_staff_user(authorization: str | None = Header(default=None)):
     """Keep API tests independent of live Supabase while exercising route authorization."""
-    expected = os.getenv("LEAD_DESK_API_TOKEN", "").strip()
-    if not expected:
-        raise HTTPException(status_code=503, detail="Supabase authentication is not configured.")
+    expected = os.getenv("LEAD_DESK_API_TOKEN", "test-secret").strip()
     scheme, _, supplied = (authorization or "").partition(" ")
     if scheme.lower() != "bearer" or not supplied or not hmac.compare_digest(supplied, expected):
         raise HTTPException(status_code=401, detail="Valid test bearer token required.")
@@ -506,7 +504,7 @@ def test_v1_lead_assignment_updates_and_audits(monkeypatch):
                     "stage": "new",
                 })
             if "INSERT INTO public.audit_events" in sql:
-                assert '"actor": "shared_token"' in params["details"]
+                assert '"actor": "authenticated_staff"' in params["details"]
                 return FakeResult(None)
             raise AssertionError(f"Unexpected SQL: {sql}")
 
