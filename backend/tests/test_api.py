@@ -1,6 +1,28 @@
 from fastapi.testclient import TestClient
+from fastapi import Header, HTTPException
+import hmac
+import os
 
 from app.main import app
+from app.auth import require_staff_user
+
+
+def test_staff_user(authorization: str | None = Header(default=None)):
+    """Keep API tests independent of live Supabase while exercising route authorization."""
+    expected = os.getenv("LEAD_DESK_API_TOKEN", "test-secret").strip()
+    scheme, _, supplied = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not supplied or not hmac.compare_digest(supplied, expected):
+        raise HTTPException(status_code=401, detail="Valid test bearer token required.")
+    return {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "email": "test@example.com",
+        "display_name": "Test Staff",
+        "role": "administrator",
+        "is_active": True,
+    }
+
+
+app.dependency_overrides[require_staff_user] = test_staff_user
 
 
 client = TestClient(app)
@@ -48,7 +70,8 @@ def test_lead_list_returns_503_when_database_is_unavailable(monkeypatch):
             raise SQLAlchemyError("database unavailable")
 
     monkeypatch.setattr(main_module, "engine", UnavailableEngine())
-    response = client.get("/api/leads")
+    monkeypatch.setenv("LEAD_DESK_API_TOKEN", "test-secret")
+    response = client.get("/api/leads", headers={"Authorization": "Bearer test-secret"})
     assert response.status_code == 503
     assert "database/schema.sql" in response.json()["detail"]
 
@@ -481,7 +504,7 @@ def test_v1_lead_assignment_updates_and_audits(monkeypatch):
                     "stage": "new",
                 })
             if "INSERT INTO public.audit_events" in sql:
-                assert '"actor": "shared_token"' in params["details"]
+                assert '"actor": "authenticated_staff"' in params["details"]
                 return FakeResult(None)
             raise AssertionError(f"Unexpected SQL: {sql}")
 

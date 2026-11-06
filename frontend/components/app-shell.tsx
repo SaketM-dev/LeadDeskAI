@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { DEMO_MODE } from '@/lib/mode';
 import {
-  Activity, BarChart3, BookOpen, CalendarDays, ChevronDown, GraduationCap,
+  Activity, BarChart3, BookOpen, CalendarDays, GraduationCap,
   LayoutDashboard, ListTodo, Menu, MessageSquare, Search, Settings,
   Sparkles, Users, X, BrainCircuit
 } from 'lucide-react';
@@ -26,11 +26,35 @@ const navigation = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [staff, setStaff] = useState<{ email: string; display_name: string; role: string } | null>(null);
+  const [authReady, setAuthReady] = useState(DEMO_MODE || pathname === '/login');
+  useEffect(() => {
+    if (DEMO_MODE || pathname === '/login') { setAuthReady(true); return; }
+    let cancelled = false;
+    fetch('/backend-api/v1/auth/me', { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Sign in required');
+        const payload = await response.json();
+        return payload.data as { email: string; display_name: string; role: string };
+      })
+      .then(user => { if (!cancelled) { setStaff(user); setAuthReady(true); } })
+      .catch(() => { if (!cancelled) router.replace('/login'); });
+    return () => { cancelled = true; };
+  }, [pathname, router]);
+
+  async function signOut() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setStaff(null);
+    router.replace('/login');
+  }
   const grouped = useMemo(() => navigation.filter(item => item.label.toLowerCase().includes(search.toLowerCase())), [search]);
   const activeItem = navigation.find(item => item.href === pathname || (item.href !== '/' && pathname.startsWith(item.href)));
 
+  if (pathname === '/login') return <div className="min-h-screen bg-[var(--color-page)] px-4 py-10 text-[var(--color-text)]">{children}</div>;
+  if (!authReady || (!DEMO_MODE && !staff)) return <div className="flex min-h-screen items-center justify-center bg-[var(--color-page)] text-sm text-[var(--color-muted)]">Checking staff access…</div>;
   return <div className="min-h-screen bg-[var(--color-page)] text-[var(--color-text)]">
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <Link href="/" aria-label="AI Lead Desk home" className="flex h-[76px] items-center gap-3 border-b border-[var(--color-border)] px-5 transition hover:bg-white/[0.025]">
@@ -48,13 +72,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>;
         })}
       </nav>
-      <div className="border-t border-[var(--color-border)] p-3"><div className="flex items-center gap-3 rounded-xl bg-[var(--color-raised)] p-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-xs font-bold text-[var(--color-accent)]">AC</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">Admissions Counselor</p><p className="text-[10px] text-[var(--color-muted)]">Role not authenticated</p></div><ChevronDown size={15} className="text-[var(--color-subtle)]"/></div></div>
+      <div className="border-t border-[var(--color-border)] p-3"><div className="flex items-center gap-3 rounded-xl bg-[var(--color-raised)] p-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-xs font-bold text-[var(--color-accent)]">{(staff?.display_name || 'AC').slice(0,2).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{staff?.display_name || 'Demo counselor'}</p><p className="truncate text-[10px] text-[var(--color-muted)]">{staff?.role || 'Local demo'}</p></div>{!DEMO_MODE&&<button onClick={signOut} className="text-[10px] font-semibold text-[var(--color-muted)] hover:text-white">Sign out</button>}</div></div>
     </aside>
     {mobileOpen && <button className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay"/>}
     <div className="lg:pl-64">
       <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-page)]/95 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="rounded-lg p-2 text-[var(--color-muted)] hover:bg-[var(--color-raised)] lg:hidden" aria-label="Open navigation"><Menu size={20}/></button><div className="hidden text-sm text-[var(--color-muted)] sm:block">Workspace <span className="mx-2">/</span><span className="font-medium capitalize text-[var(--color-text)]">{activeItem?.label || pathname.split('/')[1]?.replace(/-/g,' ') || 'Overview'}</span></div></div>
-        <div className="flex items-center gap-3"><span className="ui-badge border-[var(--color-border)] bg-[var(--color-raised)] text-[var(--color-muted)]"><span className={`h-1.5 w-1.5 rounded-full ${DEMO_MODE ? 'bg-[var(--color-purple)]' : 'bg-[var(--color-success)]'}`}/>{DEMO_MODE ? 'Demo data' : 'Live mode'}</span><div className="hidden h-7 w-px bg-[var(--color-border)] sm:block"/><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-raised)] text-xs font-semibold text-[var(--color-text)]">?</div><span className="hidden text-left sm:block"><span className="block text-xs font-semibold">Workspace user</span><span className="block text-[10px] text-[var(--color-muted)]">Authentication not connected</span></span></div></div>
+        <div className="flex items-center gap-3"><span className="ui-badge border-[var(--color-border)] bg-[var(--color-raised)] text-[var(--color-muted)]"><span className={`h-1.5 w-1.5 rounded-full ${DEMO_MODE ? 'bg-[var(--color-purple)]' : 'bg-[var(--color-success)]'}`}/>{DEMO_MODE ? 'Demo data' : 'Live mode'}</span><div className="hidden h-7 w-px bg-[var(--color-border)] sm:block"/><div className="hidden text-right sm:block"><span className="block text-xs font-semibold">{staff?.display_name || 'Demo user'}</span><span className="block text-[10px] text-[var(--color-muted)]">{staff?.email || 'Authentication not required in demo'}</span></div></div>
       </header>
       <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-center text-[11px] leading-5 text-[var(--color-muted)] sm:text-xs">{DEMO_MODE ? 'Demo data · Records are fictional; changes may be local only. No real messages or bookings are sent.' : 'Live mode · Only implemented backend endpoints are live. Unsupported actions will report errors instead of saving sample data.'}</div>
       <main className="mx-auto max-w-[1500px] px-4 py-7 sm:px-7 lg:px-9">{children}</main>

@@ -1,9 +1,10 @@
 """Endpoints for experimental XGBoost lead-intent scoring from chat enquiries."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.services.lead_scoring import score_transcript, training_summary
+from app.auth import require_staff_user
 
-router = APIRouter(prefix="/api/lead-scoring", tags=["lead-scoring"])
+router = APIRouter(prefix="/api/lead-scoring", tags=["lead-scoring"], dependencies=[Depends(require_staff_user)])
 
 
 class ScoreRequest(BaseModel):
