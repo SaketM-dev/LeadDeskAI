@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
-from app.routers.v1_leads import require_api_token
+from app.auth import require_staff_user
 
 router = APIRouter(prefix="/api/v1/follow-ups", tags=["follow-ups"])
 
@@ -44,7 +44,7 @@ class FollowUpUpdate(BaseModel):
     assigned_to: Optional[str] = None
 
 
-@router.get("", dependencies=[Depends(require_api_token)])
+@router.get("", dependencies=[Depends(require_staff_user)])
 def list_follow_ups(
     task_status: Optional[Literal["pending", "completed", "cancelled"]] = Query(default=None, alias="status"),
     lead_id: Optional[str] = None,
@@ -86,7 +86,7 @@ def list_follow_ups(
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_follow_up(payload: FollowUpCreate):
     """Create a follow-up task; planning never sends a message automatically."""
     from uuid import UUID
@@ -129,7 +129,7 @@ def create_follow_up(payload: FollowUpCreate):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'follow_up.created', 'lead', :lead_id, CAST(:details AS jsonb))
-            """), {"lead_id": lead_id, "details": json.dumps({"task_id": str(task["id"]), "actor": "shared_token"})})
+            """), {"lead_id": lead_id, "details": json.dumps({"task_id": str(task["id"]), "actor": "authenticated_staff"})})
     except HTTPException:
         raise
     except SQLAlchemyError:
@@ -137,7 +137,7 @@ def create_follow_up(payload: FollowUpCreate):
     return {"data": dict(task)}
 
 
-@router.patch("/{task_id}", dependencies=[Depends(require_api_token)])
+@router.patch("/{task_id}", dependencies=[Depends(require_staff_user)])
 def update_follow_up(task_id: str, payload: FollowUpUpdate):
     """Edit or snooze a follow-up task without executing it."""
     from uuid import UUID
@@ -193,7 +193,7 @@ def update_follow_up(task_id: str, payload: FollowUpUpdate):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'follow_up.updated', 'lead', :lead_id,
-                        jsonb_build_object('task_id', :task_id, 'actor', 'shared_token'))
+                        jsonb_build_object('task_id', :task_id, 'actor', 'authenticated_staff'))
             """), {"lead_id": str(task["lead_id"]), "task_id": parsed_task_id})
     except HTTPException:
         raise
@@ -202,7 +202,7 @@ def update_follow_up(task_id: str, payload: FollowUpUpdate):
     return {"data": dict(task)}
 
 
-@router.post("/{task_id}/complete", dependencies=[Depends(require_api_token)])
+@router.post("/{task_id}/complete", dependencies=[Depends(require_staff_user)])
 def complete_follow_up(task_id: str):
     """Complete a pending task and audit the change; does not send any message."""
     from uuid import UUID
@@ -225,7 +225,7 @@ def complete_follow_up(task_id: str):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'follow_up.completed', 'lead', :lead_id,
-                        jsonb_build_object('task_id', :task_id, 'actor', 'shared_token'))
+                        jsonb_build_object('task_id', :task_id, 'actor', 'authenticated_staff'))
             """), {"lead_id": str(task["lead_id"]), "task_id": parsed_task_id})
     except HTTPException:
         raise

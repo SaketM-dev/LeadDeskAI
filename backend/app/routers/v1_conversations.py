@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
-from app.routers.v1_leads import require_api_token
+from app.auth import require_staff_user
 
 router = APIRouter(prefix="/api/v1", tags=["conversations"])
 
@@ -28,7 +28,7 @@ class SimulatedMessageCreate(BaseModel):
     language: Optional[Literal["en", "hi", "mr"]] = None
 
 
-@router.get("/leads/{lead_id}/conversations", dependencies=[Depends(require_api_token)])
+@router.get("/leads/{lead_id}/conversations", dependencies=[Depends(require_staff_user)])
 def list_lead_conversations(
     lead_id: str,
     limit: int = Query(default=50, ge=1, le=100),
@@ -59,7 +59,7 @@ def list_lead_conversations(
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
 
 
-@router.post("/leads/{lead_id}/conversations", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("/leads/{lead_id}/conversations", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_conversation(lead_id: str, payload: ConversationCreate):
     """Create a simulated conversation record without connecting a channel."""
     try:
@@ -89,7 +89,7 @@ def create_conversation(lead_id: str, payload: ConversationCreate):
                 VALUES (NULL, 'conversation.created', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {"lead_id": parsed_lead_id, "details": json.dumps({
                 "conversation_id": str(row["id"]), "channel": payload.channel,
-                "provider_mode": "simulated", "actor": "shared_token",
+                "provider_mode": "simulated", "actor": "authenticated_staff",
             })})
     except HTTPException:
         raise
@@ -98,7 +98,7 @@ def create_conversation(lead_id: str, payload: ConversationCreate):
     return {"data": dict(row), "notice": "Simulated conversation only; no channel provider was contacted."}
 
 
-@router.get("/conversations/{conversation_id}", dependencies=[Depends(require_api_token)])
+@router.get("/conversations/{conversation_id}", dependencies=[Depends(require_staff_user)])
 def get_conversation(conversation_id: str):
     try:
         parsed_id = str(UUID(conversation_id))
@@ -118,7 +118,7 @@ def get_conversation(conversation_id: str):
     return {"data": dict(row)}
 
 
-@router.get("/conversations/{conversation_id}/messages", dependencies=[Depends(require_api_token)])
+@router.get("/conversations/{conversation_id}/messages", dependencies=[Depends(require_staff_user)])
 def list_conversation_messages(
     conversation_id: str,
     limit: int = Query(default=50, ge=1, le=100),
@@ -148,7 +148,7 @@ def list_conversation_messages(
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
 
 
-@router.post("/conversations/{conversation_id}/messages", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("/conversations/{conversation_id}/messages", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_simulated_counselor_message(conversation_id: str, payload: SimulatedMessageCreate):
     """Store a simulated counselor message record; never dispatch it to a prospect."""
     try:
@@ -187,7 +187,7 @@ def create_simulated_counselor_message(conversation_id: str, payload: SimulatedM
                 VALUES (NULL, 'conversation.message_recorded', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {"lead_id": str(conversation["lead_id"]), "details": json.dumps({
                 "conversation_id": parsed_id, "message_id": str(message["id"]),
-                "simulated": True, "dispatched": False, "actor": "shared_token",
+                "simulated": True, "dispatched": False, "actor": "authenticated_staff",
             })})
     except HTTPException:
         raise
@@ -196,7 +196,7 @@ def create_simulated_counselor_message(conversation_id: str, payload: SimulatedM
     return {"data": dict(message), "notice": "Stored as simulated history only; no message was sent."}
 
 
-@router.post("/conversations/{conversation_id}/takeover", dependencies=[Depends(require_api_token)])
+@router.post("/conversations/{conversation_id}/takeover", dependencies=[Depends(require_staff_user)])
 def take_over_conversation(conversation_id: str):
     """Pause automated handling by setting the simulated human-takeover flag."""
     try:
@@ -226,7 +226,7 @@ def take_over_conversation(conversation_id: str):
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'conversation.human_takeover_started', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {"lead_id": str(conversation["lead_id"]), "details": json.dumps({
-                "conversation_id": parsed_id, "actor": "shared_token",
+                "conversation_id": parsed_id, "actor": "authenticated_staff",
                 "automation_paused": True,
             })})
     except HTTPException:
@@ -236,7 +236,7 @@ def take_over_conversation(conversation_id: str):
     return {"data": dict(row), "notice": "Human takeover flag is active. This does not authenticate a specific counselor."}
 
 
-@router.post("/conversations/{conversation_id}/release-to-ai", dependencies=[Depends(require_api_token)])
+@router.post("/conversations/{conversation_id}/release-to-ai", dependencies=[Depends(require_staff_user)])
 def release_conversation_to_ai(conversation_id: str):
     """Explicitly clear the simulated human-takeover flag; no AI provider is invoked."""
     try:
@@ -266,7 +266,7 @@ def release_conversation_to_ai(conversation_id: str):
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'conversation.human_takeover_released', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {"lead_id": str(conversation["lead_id"]), "details": json.dumps({
-                "conversation_id": parsed_id, "actor": "shared_token",
+                "conversation_id": parsed_id, "actor": "authenticated_staff",
                 "automation_resumed": False,
             })})
     except HTTPException:

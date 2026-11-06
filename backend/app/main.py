@@ -1,4 +1,4 @@
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -14,6 +14,8 @@ from app.routers.v1_knowledge_base import router as v1_knowledge_base_router
 from app.routers.lead_scoring import router as lead_scoring_router
 from app.routers.aptitude import router as aptitude_router
 from app.routers.inbound_messages import router as inbound_messages_router
+from app.routers.v1_auth import router as v1_auth_router
+from app.auth import require_staff_user
 
 app = FastAPI(
     title="AI Lead Desk API",
@@ -33,6 +35,7 @@ app.include_router(v1_knowledge_base_router)
 app.include_router(lead_scoring_router)
 app.include_router(aptitude_router)
 app.include_router(inbound_messages_router)
+app.include_router(v1_auth_router)
 
 
 v1_health_router = APIRouter(prefix="/api/v1", tags=["v1-health"])
@@ -71,7 +74,7 @@ def readiness():
         )
 
 
-@app.get("/health/database")
+@app.get("/health/database", dependencies=[Depends(require_staff_user)])
 def database_health():
     try:
         with engine.connect() as connection:
@@ -87,7 +90,7 @@ def database_health():
         )
 
 
-@app.get("/api/dashboard/summary")
+@app.get("/api/dashboard/summary", dependencies=[Depends(require_staff_user)])
 def dashboard_summary():
     """Return live dashboard counts from the same database used by lead workflows."""
     try:
@@ -125,7 +128,7 @@ def dashboard_summary():
     }
 
 
-@app.get("/api/leads")
+@app.get("/api/leads", dependencies=[Depends(require_staff_user)])
 def list_leads():
     query = text("""
         SELECT
@@ -148,7 +151,7 @@ def list_leads():
     return {"count": len(rows), "leads": [dict(row) for row in rows]}
 
 
-@app.get("/api/leads/{lead_id}")
+@app.get("/api/leads/{lead_id}", dependencies=[Depends(require_staff_user)])
 def get_lead_detail(lead_id: str):
     """Return the recorded profile for one lead without changing database data."""
     lead_query = text("""

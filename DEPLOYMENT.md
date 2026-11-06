@@ -2,49 +2,31 @@
 
 Repository: https://github.com/SaketM-dev/LeadDeskAI
 
-## 1. Deploy the frontend on Vercel
+## 1. Deploy the backend on Render
 
-1. Sign in at https://vercel.com/new and import `SaketM-dev/LeadDeskAI`.
-2. Set **Root Directory** to `frontend`.
-3. Framework preset: **Next.js**. Build command: `npm run build`. Install command: `npm install`.
-4. Add environment variables:
-   - `NEXT_PUBLIC_DEMO_MODE` = `true` (fastest demo; uses local seeded demo data)
-   - `NEXT_PUBLIC_DEFAULT_TIMEZONE` = `Asia/Kolkata`
-   - `BACKEND_API_URL` = the public Render API URL after Step 2. Initially it can be omitted only if the build succeeds without it; live backend calls will not work until set.
-5. Click **Deploy**. Copy the resulting Vercel URL.
+1. Create a Blueprint from this GitHub repository and select the `main` branch. Render reads `render.yaml` and creates `ai-lead-desk-api`.
+2. Set `DATABASE_URL` to the Supabase PostgreSQL connection string and `SUPABASE_ANON_KEY` to the project's publishable/anon key in Render's private environment settings. `SUPABASE_URL` is already set in `render.yaml`.
+3. Add `GROQ_API_KEY` only if hosted chatbot inference is needed.
+4. Deploy, then check `https://YOUR-API.onrender.com/health`.
 
-Important: the frontend is currently configured for demo mode by default. Demo data is browser/local demo data, not shared persistent data across visitors.
+## 2. Deploy the frontend on Vercel
 
-## 2. Deploy the backend on Render
+1. Import the same GitHub repository and set **Root Directory** to `frontend`.
+2. Use Next.js, `npm install`, and `npm run build`.
+3. Set server environment variables `BACKEND_API_URL`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY`. Do not prefix these with `NEXT_PUBLIC_`.
+4. Keep `NEXT_PUBLIC_DEMO_MODE=true` while setting up authentication and verifying the live database.
+5. Set `NEXT_PUBLIC_DEFAULT_TIMEZONE=Asia/Kolkata` and deploy.
 
-1. Sign in at https://dashboard.render.com/ and choose **New + → Blueprint**.
-2. Connect the same GitHub repository and select branch `main`.
-3. Render reads `render.yaml` and creates the `ai-lead-desk-api` web service.
-4. Once deployed, open `https://YOUR-API.onrender.com/health`; expect JSON with status healthy. Also check `/docs`.
-5. In Render environment settings, add `GROQ_API_KEY` if real chatbot inference is needed. Never put this key in Vercel's `NEXT_PUBLIC_*` variables or GitHub.
-6. Copy the Render URL.
+## 3. Finish Supabase setup
 
-Render's free services can sleep when idle and may take time to wake up.
+Apply the migration order in [database/SUPABASE_SETUP.md](database/SUPABASE_SETUP.md), including the Supabase Auth staff mapping migration. In Supabase Authentication, create staff accounts, then insert their Auth UUIDs into `public.app_users` with their assigned roles. Use only `administrator`, `admissions_manager`, or `admissions_counselor`; staff must be active to enter the workspace.
 
-## 3. Connect Vercel to Render
+Set the Supabase Auth Site URL to the Vercel domain and allow that domain in redirect URLs. The login page signs in through Supabase Auth. The backend checks each token and the matching active staff role. Lead assignment and knowledge-base approval are restricted to managers and administrators.
 
-1. In Vercel → Project → Settings → Environment Variables, set `BACKEND_API_URL` to the exact Render base URL (no trailing slash), e.g. `https://ai-lead-desk-api.onrender.com`.
-2. Keep `NEXT_PUBLIC_DEMO_MODE=true` for the fastest safe demo. Redeploy the Vercel project after changing environment variables.
-3. Verify the public Vercel site loads and the API health URL works.
+## 4. Enable live mode
 
-## 4. Supabase / live database (only if needed)
-
-The backend's database-backed features require a valid `DATABASE_URL` and the repository's schema/migrations to be reviewed and applied to the intended Supabase project. Do not apply SQL blindly. Add `DATABASE_URL` only in Render's private environment settings. Use the Supabase PostgreSQL connection string, preferably the connection option recommended for your deployment network. Do not expose it to the browser.
-
-Do not set `NEXT_PUBLIC_DEMO_MODE=false` until the backend database and required tables have been verified. Otherwise database-backed screens can fail. The sign-in page is currently UI-only, not production authentication.
-
-## 5. Basic checks
-
-- Frontend: open the Vercel URL in a private/incognito window.
-- Backend: `/health` and `/docs` return successfully.
-- Demo mode: verify seeded leads and the demo chat widget appear.
-- Live mode: only test after configuring Supabase, applying reviewed schema/migrations, and configuring any required API token/provider secrets.
+After both services have the required environment variables and the database is reachable, sign in as a provisioned staff user and confirm an unprovisioned account is denied. Then change `NEXT_PUBLIC_DEMO_MODE=false` in Vercel and redeploy. The browser never receives the database URL or Supabase access token; the frontend server proxies API calls using an HttpOnly session cookie.
 
 ## Known limitations
 
-This setup deploys the existing repository; it does not make every planned workflow production-ready. Review `README.md` for features that are not yet end-to-end, authentication limitations, and the experimental nature of synthetic-data lead scoring.
+Several screens are illustrative, and WhatsApp/Instagram/telephony and real calendar integrations require separate provider setup. Review `README.md` for endpoint limitations and the experimental nature of lead scoring. Render's free service can sleep when idle.

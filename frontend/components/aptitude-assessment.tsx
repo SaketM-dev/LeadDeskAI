@@ -87,9 +87,7 @@ export default function AptitudeAssessment() {
   useEffect(()=>{
     if(DEMO_MODE) return;
     let cancelled=false;
-    const token=sessionStorage.getItem('lead-desk-api-token');
-    if(!token){setError('Save your LEAD_DESK_API_TOKEN in Workspace → Settings & access before starting a saved assessment.');return;}
-    fetch('/backend-api/v1/leads?limit=100',{headers:{Authorization:'Bearer '+token}})
+    fetch('/backend-api/v1/leads?limit=100')
       .then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.detail||'Could not load leads');return d;})
       .then(d=>{if(!cancelled){setLeads((d.data||[]).map((l:Lead)=>({id:l.id,full_name:l.full_name})));setError('');}})
       .catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Could not load leads.');});
@@ -97,7 +95,7 @@ export default function AptitudeAssessment() {
   },[]);
 
   async function request(path:string,init:RequestInit={}) {
-    const response=await fetch('/backend-api/v1/aptitude'+path,{...init,headers:{'Content-Type':'application/json',...(typeof window!=='undefined' && sessionStorage.getItem('lead-desk-api-token') ? {Authorization:'Bearer '+sessionStorage.getItem('lead-desk-api-token')} : {}),...init.headers}});
+    const response=await fetch('/backend-api/v1/aptitude'+path,{...init,credentials:'same-origin',headers:{'Content-Type':'application/json',...init.headers}});
     const body=await response.json().catch(()=>({detail:'Unexpected server response'}));
     if(!response.ok) throw new Error(typeof body.detail==='string'?body.detail:'Assessment request failed.');
     return body;

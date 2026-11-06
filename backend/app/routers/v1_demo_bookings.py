@@ -15,7 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
-from app.routers.v1_leads import require_api_token
+from app.auth import require_staff_user
 
 router = APIRouter(prefix="/api/v1/demo-bookings", tags=["demo-bookings"])
 
@@ -33,7 +33,7 @@ class DemoBookingCreate(BaseModel):
         return value
 
 
-@router.get("", dependencies=[Depends(require_api_token)])
+@router.get("", dependencies=[Depends(require_staff_user)])
 def list_demo_bookings(
     booking_status: Optional[Literal["pending", "confirmed", "cancelled", "rescheduled"]] = Query(default=None, alias="status"),
     lead_id: Optional[str] = None,
@@ -80,7 +80,7 @@ def list_demo_bookings(
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_demo_booking(payload: DemoBookingCreate):
     """Create a pending simulated booking; never claims calendar confirmation."""
     lead_id = str(UUID(payload.lead_id)) if _is_uuid(payload.lead_id) else None
@@ -110,7 +110,7 @@ def create_demo_booking(payload: DemoBookingCreate):
                 VALUES (NULL, 'demo_booking.created', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {"lead_id": lead_id, "details": json.dumps({
                 "booking_id": str(booking["id"]), "provider_mode": "simulated",
-                "actor": "shared_token",
+                "actor": "authenticated_staff",
             })})
     except HTTPException:
         raise
@@ -119,7 +119,7 @@ def create_demo_booking(payload: DemoBookingCreate):
     return {"data": dict(booking), "notice": "Simulated booking only; no calendar event was created or confirmed."}
 
 
-@router.post("/{booking_id}/cancel", dependencies=[Depends(require_api_token)])
+@router.post("/{booking_id}/cancel", dependencies=[Depends(require_staff_user)])
 def cancel_demo_booking(booking_id: str):
     """Cancel a pending simulated booking; no external calendar action occurs."""
     try:
@@ -140,7 +140,7 @@ def cancel_demo_booking(booking_id: str):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'demo_booking.cancelled', 'lead', :lead_id,
-                        jsonb_build_object('booking_id', :booking_id, 'actor', 'shared_token'))
+                        jsonb_build_object('booking_id', :booking_id, 'actor', 'authenticated_staff'))
             """), {"lead_id": str(booking["lead_id"]), "booking_id": parsed_id})
     except HTTPException:
         raise

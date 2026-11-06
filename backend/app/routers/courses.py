@@ -4,13 +4,14 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
+from app.auth import require_staff_user
 
-router = APIRouter(prefix="/api", tags=["courses"])
+router = APIRouter(prefix="/api", tags=["courses"], dependencies=[Depends(require_staff_user)])
 
 # Live approved-course endpoints use distinct paths to preserve the existing
 # illustrative GET /api/courses response contract.

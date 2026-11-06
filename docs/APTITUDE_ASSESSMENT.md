@@ -8,22 +8,17 @@ The workspace **Aptitude assessment** section now provides a structured 30-item 
 
 ## Database setup
 
-1. Back up and verify the target Supabase/PostgreSQL project.
-2. Apply `database/schema.sql` if the base aptitude tables are not already present. Review it first; do not blindly rerun a schema against a production database.
-3. Apply `database/migrations/20261017_aptitude_assessment.sql` in the Supabase SQL editor or your normal migration workflow. It adds an `updated_at` column and seeds the original eight versioned questions using `ON CONFLICT DO NOTHING`. Then apply `database/migrations/20261017_career_counseling_30_questions.sql`: it deactivates the original eight questions and seeds 30 active career-interest questions. It does not delete assessment data. Apply migrations in order.
-4. Verify the migration completed and that `public.aptitude_questions` has active questions.
-
-The migration has been committed but has **not** been applied to your live Supabase project by this change.
+The connected Supabase project already has the schema and active aptitude questions. For a fresh project, follow the complete ordered migration list in `database/SUPABASE_SETUP.md`; do not run the baseline `database/schema.sql` against the connected project.
 
 ## Live-mode configuration
 
 - Set `DATABASE_URL` on the backend to the intended PostgreSQL/Supabase connection.
-- Set `LEAD_DESK_API_TOKEN` on the backend.
-- In AI Lead Desk → Workspace → Settings & access, save the same bearer token for this browser session.
+- Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` on both frontend-server and backend environments.
+- Provision the Supabase Auth account UUID in `public.app_users` with an active staff role.
 - Set `NEXT_PUBLIC_DEMO_MODE=false` in `frontend/.env.local` and restart Next.js.
 - Start/restart FastAPI and Next.js. Open Workspace → Aptitude assessment and select an existing live lead.
 
-The assessment endpoints require `Authorization: Bearer <LEAD_DESK_API_TOKEN>`:
+The assessment endpoints require a signed-in Supabase Auth staff session:
 - `POST /api/v1/aptitude/assessments` — start an assessment.
 - `GET /api/v1/aptitude/assessments/{id}/next-question` — retrieve the next unanswered active question.
 - `POST /api/v1/aptitude/assessments/{id}/responses` — persist an answer.

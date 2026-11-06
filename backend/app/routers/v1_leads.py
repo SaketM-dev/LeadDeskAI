@@ -1,32 +1,18 @@
-"""Token-protected v1 lead endpoints.
-
-The shared token is a temporary bootstrap, not per-user authentication. Add
-sessions, role/ownership checks, and audit logging before broader production use.
-"""
-import hmac
-import os
+"""Supabase-authenticated v1 lead endpoints."""
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
+from app.auth import require_roles, require_staff_user
 
 router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 
 
-def require_api_token(authorization: Optional[str] = Header(default=None)) -> None:
-    expected = os.getenv("LEAD_DESK_API_TOKEN", "").strip()
-    if not expected:
-        raise HTTPException(status_code=503, detail="API authentication is not configured.")
-    scheme, _, supplied = (authorization or "").partition(" ")
-    if scheme.lower() != "bearer" or not supplied or not hmac.compare_digest(supplied, expected):
-        raise HTTPException(status_code=401, detail="Valid bearer token required.")
-
-
-@router.get("", dependencies=[Depends(require_api_token)])
+@router.get("", dependencies=[Depends(require_staff_user)])
 def list_leads(
     q: Optional[str] = Query(default=None, min_length=1, max_length=100),
     stage: Optional[str] = Query(default=None, max_length=40),
@@ -76,7 +62,7 @@ class LeadCreate(BaseModel):
     email_consent: bool = False
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_lead(payload: LeadCreate):
     """Create a lead with explicit consent defaults; no outbound messages are sent."""
     name = payload.full_name.strip()
@@ -113,7 +99,7 @@ def create_lead(payload: LeadCreate):
 
 
 
-@router.get("/{lead_id}", dependencies=[Depends(require_api_token)])
+@router.get("/{lead_id}", dependencies=[Depends(require_staff_user)])
 def get_lead(lead_id: str):
     """Return one active lead by UUID without exposing merged duplicate records."""
     from uuid import UUID
@@ -154,7 +140,7 @@ class LeadUpdate(BaseModel):
     do_not_contact: Optional[bool] = None
 
 
-@router.patch("/{lead_id}", dependencies=[Depends(require_api_token)])
+@router.patch("/{lead_id}", dependencies=[Depends(require_staff_user)])
 def update_lead(lead_id: str, payload: LeadUpdate):
     """Update explicitly supplied lead fields; no messages are sent by this operation."""
     from uuid import UUID
@@ -213,7 +199,7 @@ class LeadAssignment(BaseModel):
     user_id: str = Field(min_length=36, max_length=36)
 
 
-@router.post("/{lead_id}/assign", dependencies=[Depends(require_api_token)])
+@router.post("/{lead_id}/assign", dependencies=[Depends(require_roles("administrator", "admissions_manager"))])
 def assign_lead(lead_id: str, payload: LeadAssignment):
     """Assign an active lead to an active staff user and record an audit event."""
     import json
@@ -253,7 +239,7 @@ def assign_lead(lead_id: str, payload: LeadAssignment):
                 VALUES (NULL, 'lead.assigned', 'lead', :lead_id, CAST(:details AS jsonb))
             """), {
                 "lead_id": parsed_lead_id,
-                "details": json.dumps({"assigned_to": parsed_user_id, "actor": "shared_token"}),
+                "details": json.dumps({"assigned_to": parsed_user_id, "actor": "authenticated_staff"}),
             })
     except HTTPException:
         raise
@@ -269,7 +255,7 @@ class LeadNoteCreate(BaseModel):
     body: str = Field(min_length=1, max_length=5000)
 
 
-@router.post("/{lead_id}/notes", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("/{lead_id}/notes", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_lead_note(lead_id: str, payload: LeadNoteCreate):
     """Add an internal note without sending a prospect-facing message."""
     from uuid import UUID
@@ -301,7 +287,7 @@ def create_lead_note(lead_id: str, payload: LeadNoteCreate):
                 INSERT INTO public.audit_events
                     (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'lead.note_added', 'lead', :lead_id, CAST(:details AS jsonb))
-            """), {"lead_id": parsed_lead_id, "details": '{"actor":"shared_token"}'})
+            """), {"lead_id": parsed_lead_id, "details": '{"actor":"authenticated_staff"}'})
     except HTTPException:
         raise
     except SQLAlchemyError:
@@ -312,7 +298,7 @@ def create_lead_note(lead_id: str, payload: LeadNoteCreate):
 
     return {"data": dict(note)}
 
-@router.get("/{lead_id}/timeline", dependencies=[Depends(require_api_token)])
+@router.get("/{lead_id}/timeline", dependencies=[Depends(require_staff_user)])
 def get_lead_timeline(
     lead_id: str,
     limit: int = Query(default=50, ge=1, le=100),
