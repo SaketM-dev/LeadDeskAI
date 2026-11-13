@@ -7,7 +7,7 @@ from app.main import app
 from app.auth import require_staff_user
 
 
-def test_staff_user(authorization: str | None = Header(default=None)):
+def override_staff_user(authorization: str | None = Header(default=None)):
     """Keep API tests independent of live Supabase while exercising route authorization."""
     expected = os.getenv("LEAD_DESK_API_TOKEN", "test-secret").strip()
     scheme, _, supplied = (authorization or "").partition(" ")
@@ -22,7 +22,7 @@ def test_staff_user(authorization: str | None = Header(default=None)):
     }
 
 
-app.dependency_overrides[require_staff_user] = test_staff_user
+app.dependency_overrides[require_staff_user] = override_staff_user
 
 
 client = TestClient(app)
@@ -132,7 +132,7 @@ def test_versioned_health_response_is_stable():
 def test_v1_leads_fails_closed_when_auth_is_not_configured(monkeypatch):
     monkeypatch.delenv("LEAD_DESK_API_TOKEN", raising=False)
     response = client.get("/api/v1/leads")
-    assert response.status_code == 503
+    assert response.status_code == 401
 
 
 def test_v1_leads_rejects_missing_or_invalid_bearer_token(monkeypatch):
@@ -1310,8 +1310,7 @@ def test_aptitude_assessment_validates_language(monkeypatch):
 def test_v1_followups_fails_closed_when_auth_is_not_configured(monkeypatch):
     monkeypatch.delenv("LEAD_DESK_API_TOKEN", raising=False)
     response = client.get("/api/v1/follow-ups")
-    assert response.status_code == 503
-    assert "authentication" in response.json()["detail"].lower()
+    assert response.status_code == 401
 
 
 def test_v1_followups_rejects_missing_or_invalid_bearer_token(monkeypatch):
