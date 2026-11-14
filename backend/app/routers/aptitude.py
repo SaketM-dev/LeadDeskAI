@@ -11,9 +11,9 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
-from app.routers.v1_leads import require_api_token
+from app.auth import require_staff_user
 
-router = APIRouter(prefix="/api/v1/aptitude", tags=["aptitude"], dependencies=[Depends(require_api_token)])
+router = APIRouter(prefix="/api/v1/aptitude", tags=["aptitude"], dependencies=[Depends(require_staff_user)])
 
 COURSE_LABELS = {
     "realistic": "Applied Technology, Engineering and Technical Operations",

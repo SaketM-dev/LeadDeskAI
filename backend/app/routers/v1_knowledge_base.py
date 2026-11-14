@@ -9,7 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import engine
-from app.routers.v1_leads import require_api_token
+from app.auth import require_staff_user
+from app.auth import require_roles
 
 router = APIRouter(prefix="/api/v1/knowledge-base", tags=["knowledge-base"])
 
@@ -25,7 +26,7 @@ class ArticleUpdate(BaseModel):
     body: Optional[str] = Field(default=None, min_length=1, max_length=20000)
 
 
-@router.get("/documents", dependencies=[Depends(require_api_token)])
+@router.get("/documents", dependencies=[Depends(require_staff_user)])
 def list_articles(
     q: Optional[str] = Query(default=None, min_length=1, max_length=100),
     kind: Optional[Literal["course", "faq", "policy"]] = None,
@@ -59,7 +60,7 @@ def list_articles(
     return {"data": [dict(row) for row in rows], "page": {"next_cursor": None}}
 
 
-@router.post("/documents", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_token)])
+@router.post("/documents", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_staff_user)])
 def create_article(payload: ArticleCreate):
     """Create a draft and version record; draft facts are not approved for AI use."""
     title, body = payload.title.strip(), payload.body.strip()
@@ -80,13 +81,13 @@ def create_article(payload: ArticleCreate):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'knowledge_article.created', 'knowledge_article', :article_id, CAST(:details AS jsonb))
-            """), {"article_id": str(row["id"]), "details": json.dumps({"version": 1, "actor": "shared_token"})})
+            """), {"article_id": str(row["id"]), "details": json.dumps({"version": 1, "actor": "authenticated_staff"})})
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="Article could not be saved. Apply the admissions workflow migration.")
     return {"data": dict(row), "notice": "Saved as draft; it is not approved for AI use."}
 
 
-@router.patch("/documents/{article_id}", dependencies=[Depends(require_api_token)])
+@router.patch("/documents/{article_id}", dependencies=[Depends(require_staff_user)])
 def update_article(article_id: str, payload: ArticleUpdate):
     """Create a new draft version and preserve prior article versions."""
     try:
@@ -125,7 +126,7 @@ def update_article(article_id: str, payload: ArticleUpdate):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'knowledge_article.version_created', 'knowledge_article', :article_id, CAST(:details AS jsonb))
-            """), {"article_id": parsed_id, "details": json.dumps({"version": version, "actor": "shared_token"})})
+            """), {"article_id": parsed_id, "details": json.dumps({"version": version, "actor": "authenticated_staff"})})
     except HTTPException:
         raise
     except SQLAlchemyError:
@@ -133,7 +134,7 @@ def update_article(article_id: str, payload: ArticleUpdate):
     return {"data": dict(row), "notice": "New version saved as draft; approval is required before AI use."}
 
 
-@router.post("/documents/{article_id}/approve", dependencies=[Depends(require_api_token)])
+@router.post("/documents/{article_id}/approve", dependencies=[Depends(require_roles("administrator", "admissions_manager"))])
 def approve_article(article_id: str):
     """Approve the current draft version. Production role authorization is not yet available."""
     try:
@@ -169,7 +170,7 @@ def approve_article(article_id: str):
             connection.execute(text("""
                 INSERT INTO public.audit_events (actor_id, event_type, entity_type, entity_id, details)
                 VALUES (NULL, 'knowledge_article.approved', 'knowledge_article', :article_id, CAST(:details AS jsonb))
-            """), {"article_id": parsed_id, "details": json.dumps({"version": current["version"], "actor": "shared_token"})})
+            """), {"article_id": parsed_id, "details": json.dumps({"version": current["version"], "actor": "authenticated_staff"})})
     except HTTPException:
         raise
     except SQLAlchemyError:
